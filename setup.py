@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="aoc_helper",
-    version="0.2.0",
+    version="0.2.1",
     author="Starwort, salt-die",
     description="A helper package for Advent of Code",
     long_description=long_description,
@@ -18,4 +18,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
+    install_requires=[
+        "requests",
+        "bs4",
+    ],
+    extras_require={"cli": ["click"], "colour": ["colorama"]},
 )
