@@ -158,22 +158,16 @@ def submit(
         json.dump(solutions, f)
 
 
-def run_and_submit(
+def lazy_submit(
     day: int, solution: typing.Callable[[], typing.Any], year: int = DEFAULT_YEAR
 ) -> None:
-    """Run a solution and submit its answer.
+    """Run the function only if we haven't seen a solution.
 
     solution is expected to be named 'part_one' or 'part_two'
     """
     part = 1 if solution.__name__ == "part_one" else 2
-    if (DATA_DIR / str(year) / f"{part}.solution").exists():
-        # don't run the solution, because it could take a while to run
-        # `answer` is ignored anyway when the solution flag exists, so
-        # just pass a 0
-        answer = 0
-    else:
-        answer = solution()
-    submit_answer(day, part, answer, year)
+    if not (DATA_DIR / str(year) / f"{part}.solution").exists():
+        submit_answer(day, part, solution(), year)
 
 
 submit = run_and_submit  # alias for old interface
