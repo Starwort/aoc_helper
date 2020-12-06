@@ -1,9 +1,8 @@
 import datetime
+import pathlib
 import time
 import typing
 import webbrowser
-from os import makedirs
-from os.path import exists
 
 import requests
 from bs4 import BeautifulSoup as Soup
@@ -27,9 +26,9 @@ except ImportError:
 from .data import DATA_DIR, DEFAULT_YEAR, URL, WAIT_TIME, get_cookie
 
 
-def make_if_not_exists(folder: str):
-    if not exists(folder):
-        makedirs(folder)
+def make_if_not_exists(folder: pathlib.Path):
+    if not folder.exists():
+        folder.mkdir(parents=True)
 
 
 def analyse_and_print(message: str) -> None:
@@ -53,7 +52,7 @@ def fetch_data(day: int, year: int = DEFAULT_YEAR) -> str:
     make_if_not_exists(DATA_DIR / year_)
     input_path = DATA_DIR / year_ / (day_ + ".in")
 
-    if exists(input_path):
+    if input_path.exists():
         with open(input_path) as file:
             return file.read()
     else:
@@ -91,46 +90,42 @@ def submit_answer(
     answer_ = str(answer)
 
     make_if_not_exists(DATA_DIR / year_)
-    path_base = str(DATA_DIR / year_ / part_)
+    path_base = DATA_DIR / year_
 
-    if exists(path_base + ".solution"):  # empty flag file
-        with open(path_base + ".out") as file:
-            print(
-                "Day "
-                + BLUE
-                + day_
-                + RESET
-                + " part "
-                + BLUE
-                + part_
-                + RESET
-                + " has already been solved.\nThe solution was: "
-                + BLUE
-                + file.read()
-            )
-            return
+    if (path_base / f"{part}.solution").exists():  # empty flag file
+        print(
+            "Day "
+            + BLUE
+            + day_
+            + RESET
+            + " part "
+            + BLUE
+            + part_
+            + RESET
+            + " has already been solved.\nThe solution was: "
+            + BLUE
+            + (path_base / f"{part}.out").read_text()
+        )
+        return
 
-    with open(path_base + ".out") as file:
-        if answer_ == file.read():
-            with open(path_base + ".resp") as response:
-                print(
-                    YELLOW
-                    + "Solution "
-                    + BLUE
-                    + answer_
-                    + YELLOW
-                    + " to part "
-                    + BLUE
-                    + part_
-                    + YELLOW
-                    + " was your last submission."
-                    + RESET
-                )
-                analyse_and_print(response.read())
-                return
+    if answer_ == (path_base / f"{part}.out").read_text():
+        print(
+            YELLOW
+            + "Solution "
+            + BLUE
+            + answer_
+            + YELLOW
+            + " to part "
+            + BLUE
+            + part_
+            + YELLOW
+            + " was your last submission."
+            + RESET
+        )
+        analyse_and_print((path_base / f"{part}.resp").read())
+        return
 
-    with open(path_base + ".out", "w") as file:
-        file.write(answer_)
+    (path_base / f"{part}.out").write_text(answer_)
 
     submitted = False
     msg = resp = None
@@ -173,11 +168,10 @@ def submit_answer(
             submitted = True
     analyse_and_print(msg)
     if msg.startswith("That's the"):
-        open(path_base + ".solution", "w").close()  # create the flag file
+        (path_base / f"{part}.solution").touch()  # create the flag file
         if part == 1:
             webbrowser.open(resp.url)  # open part 2 in the user's browser
-    with open(path_base + ".resp", "w") as file:
-        file.write(msg)
+    (path_base / f"{part}.resp").write_text(msg)
 
 
 def run_and_submit(
@@ -188,7 +182,7 @@ def run_and_submit(
     solution is expected to be named 'part_one' or 'part_two'
     """
     part = 1 if solution.__name__ == "part_one" else 2
-    if exists(DATA_DIR / str(year) / (str(part) + ".solution")):
+    if (DATA_DIR / str(year) / f"{part}.solution").exists():
         # don't run the solution, because it could take a while to run
         # `answer` is ignored anyway when the solution flag exists, so
         # just pass a 0
