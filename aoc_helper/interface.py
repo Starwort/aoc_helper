@@ -112,6 +112,8 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
         # printing the response here is pretty pointless, the user
         # already knows it's correct
 
+        # salt: Yeah, but AoC will sometimes tell you what you placed (if you're in the top 1000) and you might want to see it!
+
     # Check if answer has already been submitted
     if answer_ in solutions[part_]:
         print(
