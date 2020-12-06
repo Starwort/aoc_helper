@@ -153,7 +153,7 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
 
     # Cache submission
     solutions[part_][answer_] = msg
-    with submissions.open() as f:
+    with submissions.open("w") as f:
         json.dump(solutions, f)
 
 
