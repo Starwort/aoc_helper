@@ -168,6 +168,3 @@ def lazy_submit(
     part = 1 if solution.__name__ == "part_one" else 2
     if not (DATA_DIR / str(year) / f"{part}.solution").exists():
         submit_answer(day, part, solution(), year)
-
-
-submit = run_and_submit  # alias for old interface
