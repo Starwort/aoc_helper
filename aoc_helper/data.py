@@ -3,7 +3,7 @@ import os
 import pathlib
 import re
 
-DATA_DIR = pathlib.Path(os.path.expanduser(os.path.join("~", ".config", "aoc_helper")))
+DATA_DIR = pathlib.Path.home() / ".config" / "aoc_helper"
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
