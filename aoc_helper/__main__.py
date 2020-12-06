@@ -38,17 +38,17 @@ def cli():
 
 @cli.command()
 @click.argument("day", type=int)
-@click.argument("year", type=int, default=DEFAULT_YEAR)
+@click.option("--year", type=int, default=DEFAULT_YEAR)
 def fetch(day: int, year: int):
     print(fetch_data(day, year))
 
 
 @cli.command()
 @click.argument("day", type=int)
-@click.argument("year", type=int, default=DEFAULT_YEAR)
 @click.argument("part", type=int)
 @click.argument("answer")
-def submit(day: int, year: int, part: int, answer: str):
+@click.option("--year", type=int, default=DEFAULT_YEAR)
+def submit(day: int, part: int, answer: str, year: int):
     submit_answer(day, part, answer, year)
 
 
