@@ -34,19 +34,19 @@ def _make(folder: pathlib.Path) -> None:
 
 
 def _pretty_print(message: str) -> None:
-    # The first index where each server response has a different character is index 7.
-    # We differentiate messages with this index.
-    #  *  "green" indicates a correct answer
-    #  *  "yellow" indicates a submission to an already solved problem
-    #  *  "red" indicates a timeout or wrong answer
-    try:
-        color = {"t": GREEN, "'": YELLOW, "n": RED, "e": RED, " ": YELLOW, "g": GREEN}[message[7]]
-    except KeyError as e:
-        raise ValueError("Failed to parse response.") from e
-    print(f"{color}{message}{RESET}")
+    if message.startswith("That's the"):
+        print(GREEN + message + RESET)
+    elif message.startswith("You don't"):
+        print(YELLOW + message + RESET)
+    elif message.startswith("That's not"):
+        print(RED + message + RESET)
+    else:
+        raise ValueError("Failed to parse response.")
 
 
-def fetch(day: int, year: int = DEFAULT_YEAR) -> str:  # Might consider a default TODAY for day
+def fetch(
+    day: int, year: int = DEFAULT_YEAR
+) -> str:  # Might consider a default TODAY for day
     """Fetch and return the input for `day` of `year`.
 
     All inputs are cached in `aoc_helper.DATA_DIR`."""
@@ -62,9 +62,9 @@ def fetch(day: int, year: int = DEFAULT_YEAR) -> str:  # Might consider a defaul
         unlock = datetime.datetime(year, 12, day, 5)
         now = datetime.datetime.utcnow()
         if now < unlock:
-            _pretty_print("Waiting for puzzle unlock...")  # Rather esoteric checks in _pretty_print to
+            print(YELLOW + "Waiting for puzzle unlock..." + RESET)
             time.sleep((unlock - now).total_seconds())
-            _pretty_print("Fetching input!")               # distinguish between these messages.
+            print(GREEN + "Fetching input!" + RESET)
         resp = requests.get(
             URL.format(day=day, year=year) + "/input", cookies=get_cookie()
         )
@@ -77,9 +77,7 @@ def fetch(day: int, year: int = DEFAULT_YEAR) -> str:  # Might consider a defaul
         return data
 
 
-def submit(
-    day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR
-) -> None:
+def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) -> None:
     """Submit a solution.
 
     Submissions are cached; submitting an already submitted solution will return the
@@ -104,13 +102,15 @@ def submit(
     # Check if solved
     solution_file = submission_dir / f"{part}.solution"
     if solution_file.exists():
-        solution = solutions_file.read_text()
+        solution = solution_file.read_text()
         print(
             f"Day {BLUE}{day}{RESET} part {BLUE}{part}{RESET} "
-            f"has already been solved.\nThe solution was: "
-            f"{BLUE}{solution}{RESET}\nResponse was:\n"
+            "has already been solved.\nThe solution was: "
+            f"{BLUE}{solution}{RESET}"  # "\nResponse was:\n"
         )
-        return _pretty_print(solutions[part_][solution])
+        return  # _pretty_print(solutions[part_][solution])
+        # printing the response here is pretty pointless, the user
+        # already knows it's correct
 
     # Check if answer has already been submitted
     if answer_ in solutions[part_]:
@@ -135,19 +135,18 @@ def submit(
             raise ValueError("Received bad response")
 
         msg: str = Soup(resp.text, "html.parser").article.text
-        _pretty_print(msg)
 
-        if msg[4] == "g":  # A quick check to see if the message starts with "You gave ..."
+        if msg.startswith("You gave"):
+            print(RED + msg + RESET)
             wait_match = WAIT_TIME.search(msg)
             pause = 60 * int(wait_match[1] or 0) + int(wait_match[2])
-            print(
-                f"{YELLOW}Waiting {BLUE}{pause}{YELLOW} seconds to retry...{RESET}""
-            )
+            print(f"{YELLOW}Waiting {BLUE}{pause}{YELLOW} seconds to retry...{RESET}")
             time.sleep(pause)
         else:
             break
+    _pretty_print(msg)
 
-    if msg[7] == "t":  # "That's the right answer!", note index 7 differentiates between all other responses.
+    if msg.startswith("That's the"):
         solution_file.write_text(answer_)
         if part == 1:
             webbrowser.open(resp.url)  # open part 2 in the user's browser
@@ -167,4 +166,4 @@ def lazy_submit(
     """
     part = 1 if solution.__name__ == "part_one" else 2
     if not (DATA_DIR / str(year) / f"{part}.solution").exists():
-        submit_answer(day, part, solution(), year)
+        submit(day, part, solution(), year)
