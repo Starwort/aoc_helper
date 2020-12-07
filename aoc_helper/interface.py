@@ -119,7 +119,7 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
         print(
             f"{YELLOW}Solution: {BLUE}{answer}{YELLOW} to part "
             f"{BLUE}{part}{YELLOW} has already been submitted.\n"
-            "Response was:\n{RESET}"
+            f"Response was:{RESET}"
         )
         return _pretty_print(solutions[part_][answer_])
 
