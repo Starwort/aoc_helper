@@ -168,4 +168,5 @@ def lazy_submit(
     """
     part = 1 if solution.__name__ == "part_one" else 2
     if not (DATA_DIR / str(year) / f"{part}.solution").exists():
-        submit(day, part, solution(), year)
+        if (answer := solution()) is not None:
+            submit(day, part, answer, year)
