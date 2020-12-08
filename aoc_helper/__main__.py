@@ -4,7 +4,7 @@ import re
 import click
 
 from .data import DEFAULT_YEAR
-from .interface import fetch
+from .interface import fetch as fetch_input
 from .interface import submit as submit_answer
 
 TEMPLATE = (pathlib.Path(__file__).parent / "day_template.py").read_text()
@@ -41,7 +41,7 @@ def cli():
 @click.argument("day", type=int)
 @click.option("--year", type=int, default=DEFAULT_YEAR)
 def fetch(day: int, year: int):
-    print(fetch(day, year))
+    print(fetch_input(day, year))
 
 
 @cli.command()
