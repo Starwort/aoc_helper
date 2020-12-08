@@ -1,7 +1,12 @@
 import pathlib
 import re
+import typing
 
-import click
+try:
+    import click
+except ImportError:
+    print("Missing dependencies for the CLI. Please `pip install aoc_helper[cli]`")
+    exit(1)
 
 from .data import DEFAULT_YEAR
 from .interface import fetch as fetch_input
@@ -12,7 +17,7 @@ TEMPLATE = (pathlib.Path(__file__).parent / "day_template.py").read_text()
 RANGE_REGEX = re.compile(r"(0?[1-9]|1[0-9]|2[0-5])-(0?[2-9]|1[0-9]|2[0-5])")
 
 
-def parse_range(_, __, value: str) -> list[int]:
+def parse_range(_, __, value: str) -> typing.List[int]:
     ranges = value.split(",")
     days: set[int] = set()
     for range_ in ranges:
@@ -55,8 +60,8 @@ def submit(day: int, part: int, answer: str, year: int):
 
 @cli.command()
 @click.argument("days", callback=parse_range)
-@click.argument("year", type=int, default=DEFAULT_YEAR)
-def template(days: list[int], year: int):
+@click.option("--year", type=int, default=DEFAULT_YEAR)
+def template(days: typing.List[int], year: int):
     for day in days:
         print(f"Generating day_{day:0>2}.py")
         pathlib.Path(f"day_{day:0>2}.py").write_text(
