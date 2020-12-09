@@ -7,4 +7,4 @@ def extract_ints(raw: str) -> typing.List[int]:
 
     Many inputs can be directly parsed with this function.
     """
-    return list(map(int, re.findall(r"((-|\+)?\d+)", raw)))
+    return list(map(int, re.findall(r"((?:-|\+)?\d+)", raw)))
