@@ -71,8 +71,9 @@ def fetch(
         if not resp.ok:
             raise ValueError("Received bad response")
         # Note to star: May consider rstrip instead -- I don't know if AoC will ever
-        # publish input that has significant whitespace at the beginning though.
-        data = resp.text.strip()
+        # publish input that has significant whitespace at the beginning though. --
+        # should now be fixed: stripping newlines only
+        data = resp.text.strip("\n")
         input_path.write_text(data)
         return data
 
