@@ -151,6 +151,8 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
     if msg.startswith("That's the"):
         solution_file.write_text(answer_)
         if part == 1:
+            if not resp.url.endswith("#part2"):
+                resp.url += "#part2"  # scroll to part 2
             webbrowser.open(resp.url)  # open part 2 in the user's browser
 
     # Cache submission
