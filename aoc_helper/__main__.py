@@ -73,7 +73,7 @@ def template(days: typing.List[int], year: int):
 
 
 @cli.command()
-@click.argument("state", type=bool, default=None)
+@click.argument("state", type=bool, default=None, required=False)
 def browser(state: typing.Optional[bool]):
     """Enable, disable, or check browser automation"""
     file = DATA_DIR / ".nobrowser"
