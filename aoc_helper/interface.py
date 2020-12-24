@@ -27,6 +27,12 @@ else:
 from .data import DATA_DIR, DEFAULT_YEAR, URL, WAIT_TIME, get_cookie
 
 
+def _open_page(page: str) -> None:
+    """Open the page if the user hasn't opted out"""
+    if not (DATA_DIR / ".nobrowser").exists():
+        webbrowser.open(page)
+
+
 def _make(folder: pathlib.Path) -> None:
     """Create folder if it doesn't exist."""
     if not folder.exists():
@@ -34,6 +40,7 @@ def _make(folder: pathlib.Path) -> None:
 
 
 def _pretty_print(message: str) -> None:
+    """Analyse and print message"""
     if message.startswith("That's the"):
         print(GREEN + message + RESET)
     elif message.startswith("You don't"):
@@ -65,7 +72,7 @@ def fetch(
             print(YELLOW + "Waiting for puzzle unlock..." + RESET)
             time.sleep((unlock - now).total_seconds())
             print(GREEN + "Fetching input!" + RESET)
-            webbrowser.open(URL.format(day=day, year=year))
+            _open_page(URL.format(day=day, year=year))
         resp = requests.get(
             URL.format(day=day, year=year) + "/input", cookies=get_cookie()
         )
@@ -155,7 +162,7 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
         if part == 1:
             if not resp.url.endswith("#part2"):
                 resp.url += "#part2"  # scroll to part 2
-            webbrowser.open(resp.url)  # open part 2 in the user's browser
+            _open_page(resp.url)  # open part 2 in the user's browser
 
     # Cache submission
     solutions[part_][answer_] = msg

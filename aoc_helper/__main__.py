@@ -8,7 +8,7 @@ except ImportError:
     print("Missing dependencies for the CLI. Please `pip install aoc_helper[cli]`")
     exit(1)
 
-from .data import DEFAULT_YEAR
+from .data import DATA_DIR, DEFAULT_YEAR
 from .interface import fetch as fetch_input
 from .interface import submit as submit_answer
 
@@ -46,6 +46,7 @@ def cli():
 @click.argument("day", type=int)
 @click.option("--year", type=int, default=DEFAULT_YEAR)
 def fetch(day: int, year: int):
+    """Fetch and print the input for DAY of --year"""
     print(fetch_input(day, year))
 
 
@@ -55,6 +56,7 @@ def fetch(day: int, year: int):
 @click.argument("answer")
 @click.option("--year", type=int, default=DEFAULT_YEAR)
 def submit(day: int, part: int, answer: str, year: int):
+    """Submit the answer for DAY part PART of --year"""
     submit_answer(day, part, answer, year)
 
 
@@ -62,11 +64,27 @@ def submit(day: int, part: int, answer: str, year: int):
 @click.argument("days", callback=parse_range)
 @click.option("--year", type=int, default=DEFAULT_YEAR)
 def template(days: typing.List[int], year: int):
+    """Generate an answer stub for every day of DAYS in --year"""
     for day in days:
         print(f"Generating day_{day:0>2}.py")
         pathlib.Path(f"day_{day:0>2}.py").write_text(
             TEMPLATE.format(day=day, year=year)
         )
+
+
+@cli.command()
+@click.argument("state", type=bool, default=None)
+def browser(state: typing.Optional[bool]):
+    """Enable, disable, or check browser automation"""
+    file = DATA_DIR / ".nobrowser"
+    if state is None:
+        print(f"Web browser automation is {'dis' if file.exists() else 'en'}abled.")
+    elif state:
+        file.unlink(True)
+        print("Enabled web browser automation")
+    else:
+        file.touch()
+        print("Disabled web browser automation")
 
 
 cli()
