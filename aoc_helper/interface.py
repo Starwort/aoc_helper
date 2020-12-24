@@ -65,6 +65,7 @@ def fetch(
             print(YELLOW + "Waiting for puzzle unlock..." + RESET)
             time.sleep((unlock - now).total_seconds())
             print(GREEN + "Fetching input!" + RESET)
+            webbrowser.open(URL.format(day=day, year=year))
         resp = requests.get(
             URL.format(day=day, year=year) + "/input", cookies=get_cookie()
         )
