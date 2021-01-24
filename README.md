@@ -73,10 +73,10 @@ YEAR is the current year by default.
 `DAYS` must be a comma-separated list of date ranges, which may be one of:
 
 - `all`, to generate a template for every day in the year
-- A single integer in the range [1, 25] to generate a single template
-- A pair of integers in the range [1, 25], separated with a hyphen, to generate a single template
+- A single integer in the range \[1, 25] to generate a single template
+- A pair of integers in the range \[1, 25], separated with a hyphen, to generate template for each day in the range
 
-Note that even if a day is included in the list of days (including implicitly, within ranges or `all`), it will only be generated once.
+Note that even if a day is included in the list of days more than once (including implicitly, within ranges or `all`), it will only be generated once.
 
 Filenames are formatted as `day_NUMBER.py` where `NUMBER` is the 2-digit day number.
 
@@ -86,5 +86,5 @@ Examples (written during 2020):
 python -m aoc_helper template all # generates day_01.py to day_25.py, with aoc_helper methods referencing 2020, in the current folder
 python -m aoc_helper template 3 --year 2019 # generates day_03.py, with aoc_helper methods referencing 2019, in the current folder
 python -m aoc_helper template 3-5 --year 2017 # generates day_03.py to day_05.py, with aoc_helper methods referencing 2017, in the current folder
-python -m aoc_helper template 3-5,7,9-10 # generates files for days 3, 4, 5, 7, 9, and 10
+python -m aoc_helper template 3-5,7,9,9-10 # generates files for days 3, 4, 5, 7, 9, and 10
 ```
