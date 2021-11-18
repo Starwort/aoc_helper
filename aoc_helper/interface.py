@@ -77,7 +77,7 @@ def fetch(
             URL.format(day=day, year=year) + "/input", cookies=get_cookie()
         )
         if not resp.ok:
-            if 'Please log in' in resp.text:
+            if resp.status_code == 400:
                 token_file = DATA_DIR / "token.txt"
                 token = input("Your token has expired. Please enter your new token\n>>> ")
                 token_file.write_text(token)
