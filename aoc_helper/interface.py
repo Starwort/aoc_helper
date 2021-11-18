@@ -77,6 +77,11 @@ def fetch(
             URL.format(day=day, year=year) + "/input", cookies=get_cookie()
         )
         if not resp.ok:
+            if 'Please log in' in resp.text:
+                token_file = DATA_DIR / "token.txt"
+                token = input("Your token has expired. Please enter your new token\n>>> ")
+                token_file.write_text(token)
+                fetch(day, year)
             raise ValueError("Received bad response")
         # Note to star: May consider rstrip instead -- I don't know if AoC will ever
         # publish input that has significant whitespace at the beginning though. --
