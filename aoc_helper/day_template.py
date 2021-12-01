@@ -1,4 +1,5 @@
 import aoc_helper
+from aoc_helper import chunk, chunk_default, extract_ints, iter, range
 
 raw = aoc_helper.fetch({day}, {year})
 
