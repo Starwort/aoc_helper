@@ -1,6 +1,7 @@
 import builtins
 import functools
 import itertools
+import operator
 import re
 import typing
 from collections import deque
@@ -41,7 +42,7 @@ def chunk_default(
     )
 
 
-class SmartIterator(typing.Generic[T]):
+class iter(typing.Generic[T]):
     _SENTINEL = object()
 
     def __init__(self, it: typing.Iterable[T]) -> None:
@@ -50,15 +51,13 @@ class SmartIterator(typing.Generic[T]):
     def __iter__(self) -> typing.Iterable[T]:
         return self.it.__iter__()
 
-    def map(self, func: typing.Callable[[T], U]) -> "SmartIterator[U]":
+    def map(self, func: typing.Callable[[T], U]) -> "iter[U]":
         """Return an iterator containing the result of calling func on each
         element in this iterator.
         """
         return type(self)(map(func, self))
 
-    def filter(
-        self, pred: typing.Union[typing.Callable[[T], bool], None]
-    ) -> "SmartIterator[T]":
+    def filter(self, pred: typing.Union[typing.Callable[[T], bool], None]) -> "iter[T]":
         """Return an iterator containing only the elements for which pred
         returns True.
 
@@ -87,21 +86,45 @@ class SmartIterator(typing.Generic[T]):
             return functools.reduce(func, self)
         return functools.reduce(func, self, initial)
 
+    @typing.overload
+    def accumulate(self) -> "iter[T]":
+        ...
+
+    @typing.overload
+    def accumulate(self, func: typing.Callable[[T, T], T]) -> "iter[T]":
+        ...
+
+    @typing.overload
+    def accumulate(self, func: typing.Callable[[T, T], T], initial: T) -> "iter[T]":
+        ...
+
+    @typing.overload
+    def accumulate(self, func: typing.Callable[[U, T], U], initial: U) -> "iter[U]":
+        ...
+
+    def accumulate(self, func=operator.add, initial=_SENTINEL):
+        """Return the accumulated results of calling func on the elements in
+        this iterator.
+
+        initial is only usable on versions of Python equal to or greater than 3.8.
+        """
+        if initial is self._SENTINEL:
+            return type(self)(itertools.accumulate(func, self))
+        return type(self)(itertools.accumulate(func, self, initial))
+
     def foreach(self, func: typing.Callable[[T], typing.Any]) -> None:
         """Run func on every value in this iterator, immediately."""
         for el in self:
             func(el)
 
-    def chunk(self, n: int) -> "SmartIterator[typing.Tuple[T, ...]]":
+    def chunk(self, n: int) -> "iter[typing.Tuple[T, ...]]":
         """Return an iterator containing the elements of this iterator in chunks
         of size n. If there are not enough elements to fill the last chunk, it
         will be dropped.
         """
         return type(self)(chunk(self, n))
 
-    def chunk_default(
-        self, n: int, default: T
-    ) -> "SmartIterator[typing.Tuple[T, ...]]":
+    def chunk_default(self, n: int, default: T) -> "iter[typing.Tuple[T, ...]]":
         """Return an iterator containing the elements of this iterator in chunks
         of size n. If there are not enough elements to fill the last chunk, the
         missing elements will be replaced with the default value.
@@ -125,7 +148,7 @@ class SmartIterator(typing.Generic[T]):
             elements.append(el)
             yield tuple(elements)
 
-    def window(self, window_size: int) -> "SmartIterator[typing.Tuple[T, ...]]":
+    def window(self, window_size: int) -> "iter[typing.Tuple[T, ...]]":
         """Return an iterator containing the elements of this iterator in
         a sliding window of size window_size. If there are not enough elements
         to create a full window, the iterator will be empty.
@@ -136,7 +159,7 @@ class SmartIterator(typing.Generic[T]):
         """Return the next element in the iterator, or raise StopIteration."""
         return next(self.it)
 
-    def skip(self, n: int = 1) -> "SmartIterator[T]":
+    def skip(self, n: int = 1) -> "iter[T]":
         """Skip and discard n elements from this iterator.
 
         Raises StopIteration if there are not enough elements.
@@ -165,7 +188,7 @@ class SmartIterator(typing.Generic[T]):
         """Return a list containing all remaining elements of this iterator."""
         return list(self)
 
-    def chain(self, other: typing.Iterable[T]) -> "SmartIterator[T]":
+    def chain(self, other: typing.Iterable[T]) -> "iter[T]":
         """Return an iterator containing the elements of this iterator followed
         by the elements of other.
         """
@@ -188,10 +211,67 @@ class SmartIterator(typing.Generic[T]):
             return sum(self)
         return sum(self, initial)
 
+    def sorted(
+        self,
+        key: typing.Union[typing.Callable[[T], U], None] = None,
+        reverse: bool = False,
+    ) -> "iter[T]":
+        """Return an iterator containing the elements of this iterator sorted
+        according to the given key and reverse parameters.
+        """
+        return type(self)(sorted(self, key=key, reverse=reverse))
+
+    def reversed(self) -> "iter[T]":
+        """Return an iterator containing the elements of this iterator in
+        reverse order.
+        """
+        return type(self)(reversed(self))
+
+    def min(self, key: typing.Union[typing.Callable[[T], U], None] = None) -> T:
+        """Return the minimum element of this iterator, according to the given
+        key.
+        """
+        return min(self, key=key)
+
+    def max(self, key: typing.Union[typing.Callable[[T], U], None] = None) -> T:
+        """Return the maximum element of this iterator, according to the given
+        key.
+        """
+        return max(self, key=key)
+
+    def tee(self, n: int = 2) -> typing.Tuple["iter[T]", ...]:
+        """Return a tuple of n iterators containing the elements of this
+        iterator.
+        """
+        return tuple(type(self)(iterator) for iterator in itertools.tee(self, n))
+
+    def permutations(
+        self, r: typing.Union[int, None] = None
+    ) -> "iter[typing.Tuple[T, ...]]":
+        """Return an iterator over the permutations of the elements of this
+        iterator.
+
+        If r is provided, the returned iterator will only contain permutations
+        of size r.
+        """
+        return type(self)(itertools.permutations(self, r))
+
+    def combinations(self, r: int) -> "iter[typing.Tuple[T, ...]]":
+        """Return an iterator over the combinations, without replacement, of
+        length r of the elements of this iterator.
+        """
+        return type(self)(itertools.combinations(self, r))
+
+    def combinations_with_replacement(self, r: int) -> "iter[typing.Tuple[T, ...]]":
+        """Return an iterator over the combinations, with replacement, of
+        length r of the elements of this iterator.
+        """
+        return type(self)(itertools.combinations_with_replacement(self, r))
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.it!r})"
+
 
 @functools.wraps(range)
 def range(*args, **kw):
-    return SmartIterator(builtins.range(*args, **kw))
-
-
-iter = SmartIterator
+    return iter(builtins.range(*args, **kw))
