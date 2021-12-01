@@ -79,9 +79,11 @@ def fetch(
         if not resp.ok:
             if resp.status_code == 400:
                 token_file = DATA_DIR / "token.txt"
-                token = input("Your token has expired. Please enter your new token\n>>> ")
+                token = input(
+                    "Your token has expired. Please enter your new token\n>>> "
+                )
                 token_file.write_text(token)
-                fetch(day, year)
+                return fetch(day, year)
             raise ValueError("Received bad response")
         # Note to star: May consider rstrip instead -- I don't know if AoC will ever
         # publish input that has significant whitespace at the beginning though. --
@@ -148,6 +150,13 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
             data={"level": part_, "answer": answer_},
         )
         if not resp.ok:
+            if resp.status_code == 400:
+                token_file = DATA_DIR / "token.txt"
+                token = input(
+                    "Your token has expired. Please enter your new token\n>>> "
+                )
+                token_file.write_text(token)
+                return submit(day, part, answer, year)
             raise ValueError("Received bad response")
 
         msg: str = Soup(resp.text, "html.parser").article.text
