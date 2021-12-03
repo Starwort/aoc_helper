@@ -213,6 +213,10 @@ class list(builtins.list, typing.Generic[T]):
         """
         return max(self, key=key)
 
+    def len(self) -> int:
+        """Return the length of this list."""
+        return len(self)
+
 
 class iter(typing.Generic[T]):
     """Smart/fluent iterator class"""
