@@ -155,9 +155,31 @@ class iter(typing.Generic[T]):
         """
         return type(self)(self._window(window_size))
 
+    def shifted_zip(self, shift: int = 1) -> "iter[typing.Tuple[T, ...]]":
+        """Return an iterator containing pairs of elements separated by shift.
+
+        If there are fewer than shift elements, the iterator will be empty.
+        """
+        return self.window(shift + 1).map(lambda x: (x[0], x[-1]))
+
     def next(self) -> T:
         """Return the next element in the iterator, or raise StopIteration."""
         return next(self.it)
+
+    @typing.overload
+    def next_or(self, default: T) -> T:
+        ...
+
+    @typing.overload
+    def next_or(self, default: U) -> typing.Union[T, U]:
+        ...
+
+    def next_or(self, default):
+        """Return the next element in the iterator, or default."""
+        try:
+            return next(self.it, default)
+        except StopIteration:
+            return default
 
     def skip(self, n: int = 1) -> "iter[T]":
         """Skip and discard n elements from this iterator.
@@ -269,7 +291,7 @@ class iter(typing.Generic[T]):
         return type(self)(itertools.combinations_with_replacement(self, r))
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}({self.it!r})"
+        return f"Smart({self.it!r})"
 
 
 @functools.wraps(range)
