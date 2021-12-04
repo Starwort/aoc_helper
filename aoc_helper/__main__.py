@@ -14,7 +14,7 @@ from .interface import submit as submit_answer
 
 TEMPLATE = (pathlib.Path(__file__).parent / "day_template.py").read_text()
 
-RANGE_REGEX = re.compile(r"(0?[1-9]|1[0-9]|2[0-5])-(0?[2-9]|1[0-9]|2[0-5])")
+RANGE_REGEX = re.compile(r"(2[0-5]|1[0-9]|0?[1-9])-(2[0-5]|1[0-9]|0?[2-9])")
 
 
 def parse_range(_, __, value: str) -> typing.List[int]:
