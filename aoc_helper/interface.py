@@ -69,6 +69,18 @@ def fetch(
         unlock = datetime.datetime(year, 12, day, 5)
         now = datetime.datetime.utcnow()
         if now < unlock:
+            if day == 1:
+                resp = requests.get(
+                    URL.format(day=1, year=2015) + "/input", cookies=get_cookie()
+                )
+                if resp.status_code == 400:
+                    token_file = DATA_DIR / "token.txt"
+                    token = input(
+                        "Your token has expired. Please enter your new token\n>>> "
+                    )
+                    token_file.write_text(token)
+                    return fetch(day, year)
+                now = datetime.datetime.utcnow()
             print(YELLOW + "Waiting for puzzle unlock..." + RESET)
             time.sleep((unlock - now).total_seconds())
             print(GREEN + "Fetching input!" + RESET)
