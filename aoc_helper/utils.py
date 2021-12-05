@@ -468,6 +468,40 @@ class iter(typing.Generic[T]):
         return f"Smart({self.it!r})"
 
 
-@functools.wraps(range)
+@functools.wraps(builtins.range)
 def range(*args, **kw):
     return iter(builtins.range(*args, **kw))
+
+
+def irange(start: int, stop: int) -> iter[int]:
+    """Inclusive range. Returns an iterator that
+    yields values from start to stop, including both
+    endpoints, stepping by one. Works even when
+    stop > start (the iterator will step backwards).
+    """
+    if start <= stop:
+        return range(start, stop + 1)
+    else:
+        return range(stop, start - 1, -1)
+
+
+def _frange(
+    start: float, stop: float, step: float
+) -> typing.Generator[float, None, None]:
+    if step == 0.0:
+        raise ValueError("frange() arg 3 must not be zero")
+    if step > 0:
+        while start < stop:
+            yield start
+            start += step
+    else:
+        while start > stop:
+            yield start
+            start -= step
+
+
+def frange(start: float, stop: float, step: float = 0.1) -> iter[float]:
+    """Float range. Returns an iterator that yields values
+    from start (inclusive) to stop (exclusive), changing by step.
+    """
+    return iter(_frange(start, stop, step))
