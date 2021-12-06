@@ -1,5 +1,5 @@
 import aoc_helper
-from aoc_helper import extract_ints, frange, irange, iter, list, range
+from aoc_helper import extract_ints, frange, irange, iter, list, range, tail_call
 
 raw = aoc_helper.fetch({day}, {year})
 

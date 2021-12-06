@@ -3,11 +3,15 @@ import functools
 import itertools
 import operator
 import re
+import sys
 import typing
 from collections import deque
 
+from typing_extensions import ParamSpec
+
 T = typing.TypeVar("T")
 U = typing.TypeVar("U")
+P = ParamSpec("P")
 
 
 def extract_ints(raw: str) -> "list[int]":
@@ -505,3 +509,39 @@ def frange(start: float, stop: float, step: float = 0.1) -> iter[float]:
     from start (inclusive) to stop (exclusive), changing by step.
     """
     return iter(_frange(start, stop, step))
+
+
+class TailRecursionDetected(Exception):
+    def __init__(self, args, kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+
+def tail_call(func: typing.Callable[P, U]) -> typing.Callable[P, U]:
+    """Add tail recursion optimisation to func.
+
+    Useful for avoiding RecursionErrors.
+
+    This is done by throwing an exception
+    if the wrapper is its own grandparent (i.e. the wrapped
+    function would be its own parent), and catching such
+    exceptions to fake the tail call optimisation.
+
+    func will behave strangely if the decorated
+    function recurses in a non-tail context.
+    """
+
+    @functools.wraps(func)
+    def g(*args, **kwargs):
+        f = sys._getframe()
+        if f.f_back and f.f_back.f_back and f.f_back.f_back.f_code == f.f_code:
+            raise TailRecursionDetected(args, kwargs)
+        else:
+            while 1:
+                try:
+                    return func(*args, **kwargs)
+                except TailRecursionDetected as e:
+                    args = e.args
+                    kwargs = e.kwargs
+
+    return func
