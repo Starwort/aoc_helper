@@ -246,7 +246,7 @@ class list(builtins.list, typing.Generic[T]):
             return self.sorted()[self.len() // 2]
         else:
             sorted_self = self.sorted()
-            return (sorted_self[self.len() // 2] + sorted_self[self.len() // 2 + 1]) / 2
+            return (sorted_self[self.len() // 2] + sorted_self[self.len() // 2 - 1]) / 2
 
     def mode(self) -> "list[T]":
         """Statistical mode of this list.
