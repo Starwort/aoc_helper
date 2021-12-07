@@ -5,7 +5,7 @@ import operator
 import re
 import sys
 import typing
-from collections import deque
+from collections import Counter, deque
 
 from typing_extensions import ParamSpec
 
@@ -220,6 +220,45 @@ class list(builtins.list, typing.Generic[T]):
     def len(self) -> int:
         """Return the length of this list."""
         return len(self)
+
+    def mean(self) -> T:
+        """Statistical mean of this list.
+
+        T must be summable and divisible by an integer,
+        and there must be at least one element in this list.
+        """
+        if self.len() == 0:
+            raise ValueError("Called mean() on an empty list")
+        return self.sum() / self.len()
+
+    def median(self) -> "T":
+        """Statistical median of this list.
+
+        T must be orderable and there must be at least one
+        element in this list.
+        Further more, if this list contains an odd number
+        of elements, T must also be summable and divisible
+        by an integer.
+        """
+        if self.len() == 0:
+            raise ValueError("Called median() on an empty list")
+        if self.len() % 2:
+            return self.sorted()[self.len() // 2]
+        else:
+            sorted_self = self.sorted()
+            return (sorted_self[self.len() // 2] + sorted_self[self.len() // 2 + 1]) / 2
+
+    def mode(self) -> "list[T]":
+        """Statistical mode of this list.
+
+        T must be hashable and there must be at least one
+        element in this list.
+        """
+        if self.len() == 0:
+            raise ValueError("Called mode() on an empty list")
+        counted = Counter(self).most_common()
+        n_ties = max(i[1] for i in counted)
+        return list(i[0] for i in counted if i[1] == n_ties)
 
 
 class iter(typing.Generic[T]):
