@@ -556,9 +556,9 @@ def range(*args, **kw):
     return iter(builtins.range(*args, **kw))
 
 
-@functools.wrap(builtins.map)
+@functools.wraps(builtins.map)
 def map(*args, **kw):
-    return iter(map(*args, **kw))
+    return iter(builtins.map(*args, **kw))
 
 
 def irange(start: int, stop: int) -> iter[int]:
