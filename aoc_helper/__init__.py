@@ -7,6 +7,7 @@ from .utils import (
     irange,
     iter,
     list,
+    map,
     range,
     tail_call,
 )

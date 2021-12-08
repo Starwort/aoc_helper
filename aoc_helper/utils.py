@@ -260,6 +260,26 @@ class list(builtins.list, typing.Generic[T]):
         n_ties = max(i[1] for i in counted)
         return list(i[0] for i in counted if i[1] == n_ties)
 
+    def flat(self, recursive: bool = False) -> "list":
+        """Flattened version of this list.
+
+        If recursive is specified, flattens recursively instead
+        of by one layer.
+        """
+        if not recursive:
+            return list(item for list in self for item in list)
+        return list(
+            subitem
+            for item in self
+            for subitem in (
+                item.flatten(True)
+                if isinstance(item, iter)
+                else list(item).flat(True)
+                if isinstance(item, builtins.list)
+                else [item]
+            )
+        )
+
 
 class iter(typing.Generic[T]):
     """Smart/fluent iterator class"""
@@ -507,6 +527,26 @@ class iter(typing.Generic[T]):
         """
         return iter(itertools.combinations_with_replacement(self, r))
 
+    def flatten(self, recursive: bool = False) -> "iter":
+        """Flatten this iterator.
+
+        If recursive is specified, flattens recursively instead
+        of by one layer.
+        """
+        if not recursive:
+            return iter(item for iterator in self for item in iterator)
+        return iter(
+            item
+            for iterator in self
+            for item in (
+                iterator.flatten(True)
+                if isinstance(iterator, iter)
+                else list(iterator).flat(True)
+                if isinstance(iterator, builtins.list)
+                else iterator
+            )
+        )
+
     def __repr__(self) -> str:
         return f"Smart({self.it!r})"
 
@@ -514,6 +554,11 @@ class iter(typing.Generic[T]):
 @functools.wraps(builtins.range)
 def range(*args, **kw):
     return iter(builtins.range(*args, **kw))
+
+
+@functools.wrap(builtins.map)
+def map(*args, **kw):
+    return iter(map(*args, **kw))
 
 
 def irange(start: int, stop: int) -> iter[int]:
@@ -571,7 +616,7 @@ def tail_call(func: typing.Callable[P, U]) -> typing.Callable[P, U]:
     """
 
     @functools.wraps(func)
-    def g(*args, **kwargs):
+    def wrapped(*args, **kwargs):
         f = sys._getframe()
         if f.f_back and f.f_back.f_back and f.f_back.f_back.f_code == f.f_code:
             raise TailRecursionDetected(args, kwargs)
@@ -583,4 +628,4 @@ def tail_call(func: typing.Callable[P, U]) -> typing.Callable[P, U]:
                     args = e.args
                     kwargs = e.kwargs
 
-    return func
+    return wrapped
