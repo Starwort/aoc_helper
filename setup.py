@@ -18,6 +18,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
-    install_requires=["requests", "bs4", "typing", "typing_extensions"],
+    install_requires=["requests", "beautifulsoup4", "typing", "typing_extensions"],
     extras_require={"cli": ["click"], "colour": ["colorama"]},
 )
