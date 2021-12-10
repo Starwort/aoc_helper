@@ -448,7 +448,7 @@ class iter(typing.Generic[T]):
         ...
 
     @typing.overload
-    def collect(self, collection_type: typing.Type[U]) -> U[T]:
+    def collect(self, collection_type: typing.Type[U]) -> "U[T]":
         ...
 
     def collect(self, collection_type=None):
