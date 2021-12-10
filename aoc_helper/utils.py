@@ -443,9 +443,19 @@ class iter(typing.Generic[T]):
         """
         return tuple(self.next() for _ in builtins.range(n))
 
-    def collect(self) -> "typing.List[T]":
+    @typing.overload
+    def collect(self) -> list[T]:
+        ...
+
+    @typing.overload
+    def collect(self, collection_type: typing.Type[U]) -> U[T]:
+        ...
+
+    def collect(self, collection_type=None):
         """Return a list containing all remaining elements of this iterator."""
-        return list(self)
+        if collection_type is None:
+            collection_type = list
+        return collection_type(self)
 
     def chain(self, other: typing.Iterable[T]) -> "iter[T]":
         """Return an iterator containing the elements of this iterator followed
