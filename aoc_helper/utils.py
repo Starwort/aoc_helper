@@ -570,7 +570,7 @@ def irange(start: int, stop: int) -> iter[int]:
     if start <= stop:
         return range(start, stop + 1)
     else:
-        return range(stop, start - 1, -1)
+        return range(start, stop - 1, -1)
 
 
 def _frange(
