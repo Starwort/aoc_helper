@@ -1,11 +1,12 @@
 import builtins
+import copy
 import functools
 import itertools
 import operator
 import re
 import sys
 import typing
-from collections import Counter, deque
+from collections import Counter, UserList, deque
 
 from typing_extensions import ParamSpec
 
@@ -46,23 +47,10 @@ def chunk_default(
     )
 
 
-class list(builtins.list, typing.Generic[T]):
+class list(UserList, typing.Generic[T]):
     """Smart/fluent list class"""
 
     _SENTINEL = object()
-
-    @typing.overload
-    def __getitem__(self, index: int) -> T:
-        ...
-
-    @typing.overload
-    def __getitem__(self, index: slice) -> "list[T]":
-        ...
-
-    def __getitem__(self, index):
-        if isinstance(index, int):
-            return super().__getitem__(index)
-        return list(super().__getitem__(index))
 
     def iter(self) -> "iter[T]":
         """Return an iterator over the list."""
@@ -150,7 +138,7 @@ class list(builtins.list, typing.Generic[T]):
 
     def accumulated(self, func=operator.add, initial=_SENTINEL):
         """Return the accumulated results of calling func on the elements in
-        this iterator.
+        this list.
 
         initial is only usable on versions of Python equal to or greater than 3.8.
         """
@@ -279,6 +267,15 @@ class list(builtins.list, typing.Generic[T]):
                 else [item]
             )
         )
+
+    def enumerated(self, start: int = 0) -> "list[typing.Tuple[int, T]]":
+        return list(enumerate(self, start))
+
+    def deepcopy(self) -> "list[T]":
+        return copy.deepcopy(self)
+
+    def __repr__(self) -> str:
+        return f"list({super().__repr__()})"
 
 
 class iter(typing.Generic[T]):
@@ -557,8 +554,11 @@ class iter(typing.Generic[T]):
             )
         )
 
+    def enumerate(self, start: int = 0) -> "iter[typing.Tuple[int, T]]":
+        return iter(enumerate(self, start))
+
     def __repr__(self) -> str:
-        return f"Smart({self.it!r})"
+        return f"iter({self.it!r})"
 
 
 @functools.wraps(builtins.range)
