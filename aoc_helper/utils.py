@@ -639,3 +639,99 @@ def tail_call(func: typing.Callable[P, U]) -> typing.Callable[P, U]:
                     kwargs = e.kwargs
 
     return wrapped
+
+
+LetterRow = typing.Tuple[
+    bool,
+    bool,
+    bool,
+    bool,
+    bool,
+]
+Letter = typing.Tuple[
+    LetterRow,
+    LetterRow,
+    LetterRow,
+    LetterRow,
+    LetterRow,
+    LetterRow,
+]
+
+
+def encode_letter(dots: Letter) -> int:
+    """Encode a matrix of dots to an integer for efficient
+    storage and lookup. Not expected to be used outside of
+    this module and contributions to the lookup table.
+
+    The matrix of dots should be 6 tall and 5 wide.
+    """
+    # Letters are 4 dots wide; the 5th column should always be empty.
+    # This function assumes that input is not malformed; any dots in the
+    # 5th column are treated as if they are in the 1st column of the next
+    # row.
+    # If something includes the 5th column it is malformed, but this
+    # function will not check.
+    out = 0
+    for y, row in enumerate(dots):
+        for x, dot in enumerate(row):
+            if dot:
+                out |= 1 << (x + 4 * y)
+    return out
+
+
+LETTERS: typing.Dict[int, str] = {
+    # todo: fill in this lookup table
+    0: " ",
+    10090902: "A",
+    7968663: "B",
+    6885782: "C",
+    15800095: "E",
+    1120031: "F",
+    15323542: "G",
+    10067865: "H",
+    14959694: "I",
+    6916236: "J",
+    9786201: "K",
+    15798545: "L",
+    6920598: "O",
+    1145239: "P",
+    9795991: "R",
+    7889182: "S",
+    6920601: "U",
+    4475409: "Y",
+    15803535: "Z",
+}
+
+
+def decode_letter(dots: Letter) -> str:
+    """Decode a matrix of dots to a single letter.
+
+    The matrix of dots should be 6 tall and 5 wide.
+    """
+    encoded = encode_letter(dots)
+    if encoded not in LETTERS:
+        print("Unrecognised letter:", encoded)
+        for row in dots:
+            for dot in row:
+                print(" #"[dot], end="")
+            print()
+        print("Please consider contributing this to the lookup table:")
+        print("https://github.com/starwort/aoc_helper")
+        return "?"
+    return LETTERS[encoded]
+
+
+def decode_text(dots: typing.List[typing.List[bool]]) -> str:
+    """Decode a matrix of dots to text.
+
+    The matrix of dots should be 6 tall and 5n - 1 wide.
+    """
+    broken_rows = [list(chunk_default(row, 5, False)) for row in dots]
+    letters = list(zip(*broken_rows))
+    out = []
+    for letter in letters:
+        out.append(decode_letter(letter))
+    if "?" in out:
+        # prevent submitting malformed output
+        raise ValueError("Unrecognised letter")
+    return "".join(out)
