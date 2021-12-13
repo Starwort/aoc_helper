@@ -1,5 +1,15 @@
 import aoc_helper
-from aoc_helper import extract_ints, frange, irange, iter, list, map, range, tail_call
+from aoc_helper import (
+    decode_text,
+    extract_ints,
+    frange,
+    irange,
+    iter,
+    list,
+    map,
+    range,
+    tail_call,
+)
 
 raw = aoc_helper.fetch({day}, {year})
 
