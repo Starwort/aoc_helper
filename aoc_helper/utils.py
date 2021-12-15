@@ -7,6 +7,7 @@ import re
 import sys
 import typing
 from collections import Counter, UserList, deque
+from heapq import heappop, heappush
 
 from typing_extensions import ParamSpec
 
@@ -735,3 +736,37 @@ def decode_text(dots: typing.List[typing.List[bool]]) -> str:
         # prevent submitting malformed output
         raise ValueError("Unrecognised letter")
     return "".join(out)
+
+
+def djikstras(
+    grid: typing.List[typing.List[int]],
+    start: typing.Optional[typing.Tuple[int, int]] = None,
+    end: typing.Optional[typing.Tuple[int, int]] = None,
+) -> int:
+    """Use Djikstra's algorithm to find the best path from
+    start to end, and return the total cost.
+
+    start defaults to the top left, and end defaults to the bottom right.
+    """
+    to_visit = []
+    heappush(to_visit, (0, start or (0, 0)))
+    visited = set()
+    if end is None:
+        target = len(grid[0]) - 1, len(grid) - 1
+    else:
+        target = end
+    while True:
+        cost, (x, y) = heappop(to_visit)
+        if (x, y) in visited:
+            continue
+        if (x, y) == target:
+            return cost
+        visited.add((x, y))
+        if x > 0:
+            heappush(to_visit, (cost + grid[y][x - 1], (x - 1, y)))
+        if x < target[0]:
+            heappush(to_visit, (cost + grid[y][x + 1], (x + 1, y)))
+        if y > 0:
+            heappush(to_visit, (cost + grid[y - 1][x], (x, y - 1)))
+        if y < target[1]:
+            heappush(to_visit, (cost + grid[y + 1][x], (x, y + 1)))
