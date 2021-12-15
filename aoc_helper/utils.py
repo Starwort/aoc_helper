@@ -738,12 +738,12 @@ def decode_text(dots: typing.List[typing.List[bool]]) -> str:
     return "".join(out)
 
 
-def djikstras(
+def dijkstras(
     grid: typing.List[typing.List[int]],
     start: typing.Optional[typing.Tuple[int, int]] = None,
     end: typing.Optional[typing.Tuple[int, int]] = None,
 ) -> int:
-    """Use Djikstra's algorithm to find the best path from
+    """Use Dijkstra's algorithm to find the best path from
     start to end, and return the total cost.
 
     start defaults to the top left, and end defaults to the bottom right.
