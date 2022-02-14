@@ -556,7 +556,14 @@ class iter(typing.Generic[T]):
         )
 
     def enumerate(self, start: int = 0) -> "iter[typing.Tuple[int, T]]":
+        """Return an iterator over the elements of this iterator, paired with
+        their index, starting at start.
+        """
         return iter(enumerate(self, start))
+
+    def count(self) -> int:
+        """Consume this iterator and return the number of elements it contained."""
+        return self.map(lambda _: 1).sum()
 
     def __repr__(self) -> str:
         return f"iter({self.it!r})"
