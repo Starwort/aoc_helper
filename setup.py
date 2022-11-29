@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="aoc_helper",
-    version="1.3.5",
+    version="1.4.0",
     author="Starwort, salt-die",
     description="A helper package for Advent of Code",
     long_description=long_description,
