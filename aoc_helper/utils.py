@@ -851,7 +851,7 @@ class Grid(typing.Generic[T]):
         Can take a classifier to use a custom classification. The default will
         map numbers from 0 to 9 to themselves, and . and # to 0 and 1 respectively.
         """
-        return Grid(list(data).mapped(lambda i: list(i).mapped(classify)))
+        return Grid(list(data.splitlines()).mapped(lambda i: list(i).mapped(classify)))
 
     def dijkstras(
         self,
