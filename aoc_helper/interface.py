@@ -15,6 +15,7 @@ except ImportError:
     YELLOW = ""
     GREEN = ""
     BLUE = ""
+    GOLD = ""
     RESET = ""
 else:
     colour.init()
@@ -22,9 +23,10 @@ else:
     YELLOW = colour.Fore.LIGHTYELLOW_EX
     GREEN = colour.Fore.LIGHTGREEN_EX
     BLUE = colour.Fore.LIGHTBLUE_EX
+    GOLD = colour.Fore.YELLOW
     RESET = colour.Fore.RESET
 
-from .data import DATA_DIR, DEFAULT_YEAR, URL, WAIT_TIME, get_cookie
+from .data import DATA_DIR, DEFAULT_YEAR, RANK, TODAY, URL, WAIT_TIME, get_cookie
 
 
 def _open_page(page: str) -> None:
@@ -47,13 +49,13 @@ def _pretty_print(message: str) -> None:
         print(YELLOW + message + RESET)
     elif message.startswith("That's not"):
         print(RED + message + RESET)
+    elif message.startswith("You got rank"):
+        print(GOLD + message + RESET)
     else:
         raise ValueError("Failed to parse response.")
 
 
-def fetch(
-    day: int, year: int = DEFAULT_YEAR
-) -> str:  # Might consider a default TODAY for day
+def fetch(day: int = TODAY, year: int = DEFAULT_YEAR) -> str:
     """Fetch and return the input for `day` of `year`.
 
     All inputs are cached in `aoc_helper.DATA_DIR`."""
@@ -69,6 +71,7 @@ def fetch(
         unlock = datetime.datetime(year, 12, day, 5)
         now = datetime.datetime.utcnow()
         if now < unlock:
+            # On the first day, run a stray request to validate the user's token
             if day == 1:
                 resp = requests.get(
                     URL.format(day=1, year=2015) + "/input", cookies=get_cookie()
@@ -97,9 +100,6 @@ def fetch(
                 token_file.write_text(token)
                 return fetch(day, year)
             raise ValueError("Received bad response")
-        # Note to star: May consider rstrip instead -- I don't know if AoC will ever
-        # publish input that has significant whitespace at the beginning though. --
-        # should now be fixed: stripping newlines only
         data = resp.text.strip("\n")
         input_path.write_text(data)
         return data
@@ -136,11 +136,9 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
             "has already been solved.\nThe solution was: "
             f"{BLUE}{solution}{RESET}"  # "\nResponse was:\n"
         )
-        return  # _pretty_print(solutions[part_][solution])
-        # printing the response here is pretty pointless, the user
-        # already knows it's correct
-
-        # salt: Yeah, but AoC will sometimes tell you what you placed (if you're in the top 1000) and you might want to see it!
+        if match := RANK.match(solutions[part_][solution]):
+            _pretty_print(match.group(0))
+        return
 
     # Check if answer has already been submitted
     if answer_ in solutions[part_]:
