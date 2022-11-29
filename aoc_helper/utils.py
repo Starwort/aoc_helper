@@ -819,6 +819,139 @@ def decode_text(dots: typing.List[typing.List[bool]]) -> str:
     return "".join(out)
 
 
+def _default_classifier(char: str) -> int:
+    if char in "0123456789":
+        return int(char)
+    elif char in ".#":
+        return ".#".index(char)
+    else:
+        raise ValueError(f"Could not classify {char}. Please use a custom classifier.")
+
+
+class Grid(typing.Generic[T]):
+    data: list[list[T]]
+
+    def __init__(self, data: list[list[T]]) -> None:
+        self.data = data
+
+    @typing.overload
+    @classmethod
+    def from_string(cls, data: str) -> "Grid[int]":
+        ...
+
+    @typing.overload
+    @classmethod
+    def from_string(cls, data: str, classify: typing.Callable[[str], T]) -> "Grid[T]":
+        ...
+
+    @classmethod
+    def from_string(cls, data: str, classify=_default_classifier):  # type: ignore
+        """Create a grid from a string (e.g. a puzzle input).
+
+        Can take a classifier to use a custom classification. The default will
+        map numbers from 0 to 9 to themselves, and . and # to 0 and 1 respectively.
+        """
+        return Grid(list(data).mapped(lambda i: list(i).mapped(classify)))
+
+    def dijkstras(
+        self,
+        start: typing.Optional[typing.Tuple[int, int]] = None,
+        end: typing.Optional[typing.Tuple[int, int]] = None,
+    ) -> int:
+        """Use Dijkstra's algorithm to find the best path from
+        start to end, and return the total cost.
+
+        start defaults to the top left, and end defaults to the bottom right.
+        """
+        to_visit = []
+        heappush(to_visit, (0, start or (0, 0)))
+        visited = set()
+        if end is None:
+            target = len(self.data[0]) - 1, len(self.data) - 1
+        else:
+            target = end
+
+        while True:
+            cost, (x, y) = heappop(to_visit)
+            if (x, y) in visited:
+                continue
+            if (x, y) == target:
+                return cost
+            visited.add((x, y))
+            if x > 0:
+                heappush(to_visit, (cost + self.data[y][x - 1], (x - 1, y)))
+            if x < len(self.data[0]) - 1:
+                heappush(to_visit, (cost + self.data[y][x + 1], (x + 1, y)))
+            if y > 0:
+                heappush(to_visit, (cost + self.data[y - 1][x], (x, y - 1)))
+            if y < len(self.data) - 1:
+                heappush(to_visit, (cost + self.data[y + 1][x], (x, y + 1)))
+
+    def neighbours(self, x: int, y: int) -> list[T]:
+        """Return the neighbours of a point in the grid (but not the point itself).
+
+        Examples below:
+        - A is the point (x, y)
+        - * are points returned
+        - . are other points in the grid
+
+        ...........
+        ..***......
+        ..*A*......
+        ..***......
+
+        A*.........
+        **.........
+        ...........
+        ...........
+        """
+        return (
+            irange(max(y - 1, 0), min(y + 1, len(self.data)))
+            .map(
+                lambda y_: irange(max(x - 1, 0), min(x + 1, len(self.data[0])))
+                .filter(lambda x_: (x, y) != (x_, y_))
+                .map(lambda x: self.data[y_][x])
+            )
+            .flatten(False)
+        ).collect()
+
+    def orthogonal_neighbours(self, x: int, y: int) -> list[T]:
+        """Return the orthogonal neighbours of a point in the grid (but not the
+        point itself).
+
+        Examples below:
+        - A is the point (x, y)
+        - * are points returned
+        - . are other points in the grid
+
+        ...........
+        ...*.......
+        ..*A*......
+        ...*.......
+
+        A*.........
+        *..........
+        ...........
+        ...........
+        """
+        rv = list()
+        if x > 0:
+            rv.append(self.data[y][x - 1])
+        if x < len(self.data[0]) - 1:
+            rv.append(self.data[y][x + 1])
+        if y > 0:
+            rv.append(self.data[y - 1][x])
+        if y < len(self.data) - 1:
+            rv.append(self.data[y + 1][x])
+        return rv
+
+    def deepcopy(self) -> "Grid[T]":
+        return Grid(self.data.deepcopy())
+
+    def __getitem__(self, index: int) -> list[T]:
+        return self.data[index]
+
+
 def dijkstras(
     grid: typing.List[typing.List[int]],
     start: typing.Optional[typing.Tuple[int, int]] = None,
@@ -829,25 +962,4 @@ def dijkstras(
 
     start defaults to the top left, and end defaults to the bottom right.
     """
-    to_visit = []
-    heappush(to_visit, (0, start or (0, 0)))
-    visited = set()
-    if end is None:
-        target = len(grid[0]) - 1, len(grid) - 1
-    else:
-        target = end
-    while True:
-        cost, (x, y) = heappop(to_visit)
-        if (x, y) in visited:
-            continue
-        if (x, y) == target:
-            return cost
-        visited.add((x, y))
-        if x > 0:
-            heappush(to_visit, (cost + grid[y][x - 1], (x - 1, y)))
-        if x < target[0]:
-            heappush(to_visit, (cost + grid[y][x + 1], (x + 1, y)))
-        if y > 0:
-            heappush(to_visit, (cost + grid[y - 1][x], (x, y - 1)))
-        if y < target[1]:
-            heappush(to_visit, (cost + grid[y + 1][x], (x, y + 1)))
+    return Grid(list(grid).mapped(list)).dijkstras(start, end)
