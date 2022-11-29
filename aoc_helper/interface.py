@@ -134,7 +134,7 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
         print(
             f"Day {BLUE}{day}{RESET} part {BLUE}{part}{RESET} "
             "has already been solved.\nThe solution was: "
-            f"{BLUE}{solution}{RESET}"  # "\nResponse was:\n"
+            f"{BLUE}{solution}{RESET}"
         )
         if match := RANK.match(solutions[part_][solution]):
             _pretty_print(match.group(0))
@@ -202,6 +202,22 @@ def lazy_submit(
     solution is expected to be named 'part_one' or 'part_two'
     """
     part = 1 if solution.__name__ == "part_one" else 2
-    if not (DATA_DIR / str(year) / str(day) / f"{part}.solution").exists():
-        if (answer := solution()) is not None:
-            submit(day, part, answer, year)
+    submission_dir = DATA_DIR / str(year) / str(day)
+    solution_file = submission_dir / f"{part}.solution"
+    # Check if solved
+    if solution_file.exists():
+        # Load cached solutions
+        submissions = submission_dir / "submissions.json"
+        with submissions.open() as f:
+            solutions = json.load(f)
+
+        solution_ = solution_file.read_text()
+        print(
+            f"Day {BLUE}{day}{RESET} part {BLUE}{part}{RESET} "
+            "has already been solved.\nThe solution was: "
+            f"{BLUE}{solution_}{RESET}"
+        )
+        if match := RANK.match(solutions[str(part)][solution_]):
+            _pretty_print(match.group(0))
+    elif (answer := solution()) is not None:
+        submit(day, part, answer, year)
