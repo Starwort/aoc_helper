@@ -136,7 +136,7 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
             "has already been solved.\nThe solution was: "
             f"{BLUE}{solution}{RESET}"
         )
-        if match := RANK.match(solutions[part_][solution]):
+        if match := RANK.search(solutions[part_][solution]):
             _pretty_print(match.group(0))
         return
 
@@ -217,7 +217,7 @@ def lazy_submit(
             "has already been solved.\nThe solution was: "
             f"{BLUE}{solution_}{RESET}"
         )
-        if match := RANK.match(solutions[str(part)][solution_]):
+        if match := RANK.search(solutions[str(part)][solution_]):
             _pretty_print(match.group(0))
     elif (answer := solution()) is not None:
         submit(day, part, answer, year)
