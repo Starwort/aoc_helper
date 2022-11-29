@@ -8,7 +8,7 @@ import re
 import sys
 import typing
 from collections import Counter, UserList, deque
-from heapq import heappop, heappush
+from heapq import heapify, heappop, heappush
 
 from typing_extensions import ParamSpec
 
@@ -963,3 +963,23 @@ def dijkstras(
     start defaults to the top left, and end defaults to the bottom right.
     """
     return Grid(list(grid).mapped(list)).dijkstras(start, end)
+
+
+class PrioQueue(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
+    _data: builtins.list[T]
+
+    def __init__(self, data: builtins.list[T]) -> None:
+        self._data = data
+        heapify(self._data)
+
+    def __next__(self) -> T:
+        return heappop(self._data)
+
+    def __iter__(self):
+        return self
+
+    def next(self) -> T:
+        return next(self)
+
+    def push(self, val: T) -> None:
+        heappush(self._data, val)

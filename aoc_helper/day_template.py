@@ -1,5 +1,7 @@
 import aoc_helper
 from aoc_helper import (
+    Grid,
+    PrioQueue,
     decode_text,
     extract_ints,
     frange,
