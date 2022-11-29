@@ -1,3 +1,4 @@
+import builtins
 import datetime
 import json
 import pathlib
@@ -8,8 +9,10 @@ import webbrowser
 import requests
 from bs4 import BeautifulSoup as Soup
 
+T = typing.TypeVar("T")
+
 try:
-    import colorama as colour
+    from rich import print, progress
 except ImportError:
     RED = ""
     YELLOW = ""
@@ -17,14 +20,44 @@ except ImportError:
     BLUE = ""
     GOLD = ""
     RESET = ""
+
+    def wait(msg: str, secs: float) -> None:
+        print(msg)
+        time.sleep(secs)
+
+    def work(msg: str, worker: typing.Callable[[], T]) -> T:
+        print(msg)
+        return worker()
+
 else:
-    colour.init()
-    RED = colour.Fore.LIGHTRED_EX
-    YELLOW = colour.Fore.LIGHTYELLOW_EX
-    GREEN = colour.Fore.LIGHTGREEN_EX
-    BLUE = colour.Fore.LIGHTBLUE_EX
-    GOLD = colour.Fore.YELLOW
-    RESET = colour.Fore.RESET
+    RED = "[red]"
+    YELLOW = "[yellow]"
+    GREEN = "[green]"
+    BLUE = "[blue]"
+    GOLD = "[gold1]"
+    RESET = "[/]"
+
+    def wait(msg: str, secs: float) -> None:
+        for _ in progress.track(
+            builtins.range(int(100 * secs)),
+            description=msg,
+            show_speed=False,
+            transient=True,
+        ):
+            time.sleep(0.01)
+
+    def work(msg: str, worker: typing.Callable[[], T]) -> T:
+        with progress.Progress(
+            progress.TextColumn("{task.description}"),
+            progress.SpinnerColumn(),
+            progress.TimeElapsedColumn(),
+            transient=True,
+        ) as bar:
+            task = bar.add_task(msg)
+            val = worker()
+            bar.advance(task)
+            return val
+
 
 from .data import DATA_DIR, DEFAULT_YEAR, RANK, TODAY, URL, WAIT_TIME, get_cookie
 
@@ -78,14 +111,18 @@ def fetch(day: int = TODAY, year: int = DEFAULT_YEAR) -> str:
                 )
                 if resp.status_code == 400:
                     token_file = DATA_DIR / "token.txt"
-                    token = input(
-                        "Your token has expired. Please enter your new token\n>>> "
+                    print(
+                        f"{RED}Your token has expired. Please enter your new"
+                        f" token.{RESET}"
                     )
+                    token = input(">>> ")
                     token_file.write_text(token)
                     return fetch(day, year)
                 now = datetime.datetime.utcnow()
-            print(YELLOW + "Waiting for puzzle unlock..." + RESET)
-            time.sleep((unlock - now).total_seconds())
+            wait(
+                f"{YELLOW}Waiting for puzzle unlock...{RESET}",
+                (unlock - now).total_seconds(),
+            )
             print(GREEN + "Fetching input!" + RESET)
             _open_page(URL.format(day=day, year=year))
         resp = requests.get(
@@ -94,9 +131,10 @@ def fetch(day: int = TODAY, year: int = DEFAULT_YEAR) -> str:
         if not resp.ok:
             if resp.status_code == 400:
                 token_file = DATA_DIR / "token.txt"
-                token = input(
-                    "Your token has expired. Please enter your new token\n>>> "
+                print(
+                    f"{RED}Your token has expired. Please enter your new token.{RESET}"
                 )
+                token = input(">>> ")
                 token_file.write_text(token)
                 return fetch(day, year)
             raise ValueError("Received bad response")
@@ -143,8 +181,8 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
     # Check if answer has already been submitted
     if answer_ in solutions[part_]:
         print(
-            f"{YELLOW}Solution: {BLUE}{answer}{YELLOW} to part "
-            f"{BLUE}{part}{YELLOW} has already been submitted.\n"
+            f"{YELLOW}Solution: {BLUE}{answer}{RESET} to part "
+            f"{BLUE}{part}{RESET} has already been submitted.\n"
             f"Response was:{RESET}"
         )
         return _pretty_print(solutions[part_][answer_])
@@ -175,8 +213,10 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
             print(RED + msg + RESET)
             wait_match = WAIT_TIME.search(msg)
             pause = 60 * int(wait_match[1] or 0) + int(wait_match[2])
-            print(f"{YELLOW}Waiting {BLUE}{pause}{YELLOW} seconds to retry...{RESET}")
-            time.sleep(pause)
+            wait(
+                f"{YELLOW}Waiting {BLUE}{pause}{RESET} seconds to retry...{RESET}",
+                pause,
+            )
         else:
             break
     _pretty_print(msg)
@@ -219,5 +259,11 @@ def lazy_submit(
         )
         if match := RANK.search(solutions[str(part)][solution_]):
             _pretty_print(match.group(0))
-    elif (answer := solution()) is not None:
+    elif (
+        answer := work(
+            f"{YELLOW}Running part"
+            f" {RESET}{BLUE}{part}{RESET}{YELLOW} solution...{RESET}",
+            solution,
+        )
+    ) is not None:
         submit(day, part, answer, year)
