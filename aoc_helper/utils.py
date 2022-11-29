@@ -64,39 +64,27 @@ class list(UserList, typing.Generic[T]):
         return list(map(func, self))
 
     def filtered(
-        self, pred: typing.Union[typing.Callable[[T], bool], None]
+        self, pred: typing.Union[typing.Callable[[T], bool], T, None] = None
     ) -> "list[T]":
         """Return a list containing only the elements for which pred
         returns True.
 
         If pred is None, return a list containing only elements that are
         truthy.
+
+        If pred is a T (and T is not a callable or None), return a list
+        containing only elements that compare equal to pred.
         """
+        if not callable(pred) and pred is not None:
+            pred = (lambda j: lambda i: i == j)(pred)
         return list(filter(pred, self))
-
-    def _window(
-        self, window_size: int
-    ) -> typing.Generator[typing.Tuple[T, ...], None, None]:
-        elements = deque()
-        for _ in range(window_size):
-            try:
-                elements.append(self.next())
-            except StopIteration:
-                return
-
-        yield tuple(elements)
-
-        for el in self:
-            elements.popleft()
-            elements.append(el)
-            yield tuple(elements)
 
     def windowed(self, window_size: int) -> "list[typing.Tuple[T, ...]]":
         """Return an list containing the elements of this list in
         a sliding window of size window_size. If there are not enough elements
         to create a full window, the list will be empty.
         """
-        return list(self._window(window_size))
+        return list(self.iter().window(window_size))
 
     def shifted_zip(self, shift: int = 1) -> "iter[typing.Tuple[T, ...]]":
         """Return an iterator containing pairs of elements separated by shift.
@@ -144,8 +132,8 @@ class list(UserList, typing.Generic[T]):
         initial is only usable on versions of Python equal to or greater than 3.8.
         """
         if initial is self._SENTINEL:
-            return list(itertools.accumulate(func, self))
-        return list(itertools.accumulate(func, self, initial))
+            return list(itertools.accumulate(self, func))
+        return list(itertools.accumulate(self, func, initial))
 
     def chunked(self, n: int) -> "list[typing.Tuple[T, ...]]":
         """Return a list containing the elements of this list in chunks
@@ -279,7 +267,7 @@ class list(UserList, typing.Generic[T]):
         return f"list({super().__repr__()})"
 
 
-class iter(typing.Generic[T]):
+class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
     """Smart/fluent iterator class"""
 
     _SENTINEL = object()
@@ -290,19 +278,29 @@ class iter(typing.Generic[T]):
     def __iter__(self) -> typing.Iterable[T]:
         return self.it.__iter__()
 
+    def __next__(self) -> T:
+        return next(self)
+
     def map(self, func: typing.Callable[[T], U]) -> "iter[U]":
         """Return an iterator containing the result of calling func on each
         element in this iterator.
         """
         return iter(map(func, self))
 
-    def filter(self, pred: typing.Union[typing.Callable[[T], bool], None]) -> "iter[T]":
+    def filter(
+        self, pred: typing.Union[typing.Callable[[T], bool], T, None] = None
+    ) -> "iter[T]":
         """Return an iterator containing only the elements for which pred
         returns True.
 
         If pred is None, return an iterator containing only elements that are
         truthy.
+
+        If pred is a T (and T is not a callable or None), return an iterator
+        containing only elements that compare equal to pred.
         """
+        if not callable(pred) and pred is not None:
+            pred = (lambda j: lambda i: i == j)(pred)
         return iter(filter(pred, self))
 
     @typing.overload
@@ -344,8 +342,8 @@ class iter(typing.Generic[T]):
         initial is only usable on versions of Python equal to or greater than 3.8.
         """
         if initial is self._SENTINEL:
-            return iter(itertools.accumulate(func, self))
-        return iter(itertools.accumulate(func, self, initial))
+            return iter(itertools.accumulate(self, func))
+        return iter(itertools.accumulate(self, func, initial))  # type: ignore
 
     def foreach(self, func: typing.Callable[[T], typing.Any]) -> None:
         """Run func on every value in this iterator, immediately."""
@@ -634,7 +632,7 @@ def tail_call(func: typing.Callable[P, U]) -> typing.Callable[P, U]:
     """
 
     @functools.wraps(func)
-    def wrapped(*args, **kwargs):
+    def wrapped(*args: P.args, **kwargs: P.kwargs):
         f = sys._getframe()
         if f.f_back and f.f_back.f_back and f.f_back.f_back.f_code == f.f_code:
             raise TailRecursionDetected(args, kwargs)
@@ -643,8 +641,9 @@ def tail_call(func: typing.Callable[P, U]) -> typing.Callable[P, U]:
                 try:
                     return func(*args, **kwargs)
                 except TailRecursionDetected as e:
-                    args = e.args
-                    kwargs = e.kwargs
+                    args = e.args  # type: ignore
+                    kwargs = e.kwargs  # type: ignore
+        raise Exception("unreachable")
 
     return wrapped
 
