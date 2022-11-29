@@ -2,6 +2,7 @@ import builtins
 import copy
 import functools
 import itertools
+import math
 import operator
 import re
 import sys
@@ -79,6 +80,26 @@ class list(UserList, typing.Generic[T]):
             pred = (lambda j: lambda i: i == j)(pred)
         return list(filter(pred, self))
 
+    def find(
+        self, pred: typing.Union[typing.Callable[[T], bool], T, None] = None
+    ) -> typing.Optional[T]:
+        """Return the first element of self for which pred returns True.
+
+        If pred is None, return the first element which is truthy.
+
+        If pred is a T (and T is not a callable or None), return the first element
+        that compares equal to pred.
+
+        If no such element exists, return None.
+        """
+        if pred is None:
+            pred = lambda i: bool(i)
+        elif not callable(pred):
+            pred = (lambda j: lambda i: i == j)(pred)
+        for i in self:
+            if pred(i):
+                return i
+
     def windowed(self, window_size: int) -> "list[typing.Tuple[T, ...]]":
         """Return an list containing the elements of this list in
         a sliding window of size window_size. If there are not enough elements
@@ -102,7 +123,7 @@ class list(UserList, typing.Generic[T]):
         ...
 
     def reduce(self, func, initial=_SENTINEL):
-        """Reduce the iterator to a single value, using the reduction
+        """Reduce the list to a single value, using the reduction
         function provided.
         """
         if initial is self._SENTINEL:
@@ -165,6 +186,23 @@ class list(UserList, typing.Generic[T]):
         if initial is self._SENTINEL:
             return sum(self)
         return sum(self, initial)
+
+    @typing.overload
+    def prod(self) -> T:
+        ...
+
+    @typing.overload
+    def prod(self, initial: T) -> T:
+        ...
+
+    def prod(self, initial=_SENTINEL):
+        """Return the product of all elements in this list.
+
+        If initial is provided, it is used as the initial value.
+        """
+        if initial is self._SENTINEL:
+            return math.prod(self)
+        return math.prod(self, start=initial)
 
     def sorted(
         self,
@@ -302,6 +340,26 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         if not callable(pred) and pred is not None:
             pred = (lambda j: lambda i: i == j)(pred)
         return iter(filter(pred, self))
+
+    def find(
+        self, pred: typing.Union[typing.Callable[[T], bool], T, None] = None
+    ) -> typing.Optional[T]:
+        """Return the first element of self for which pred returns True.
+
+        If pred is None, return the first element which is truthy.
+
+        If pred is a T (and T is not a callable or None), return the first element
+        that compares equal to pred.
+
+        If no such element exists, return None.
+        """
+        if pred is None:
+            pred = lambda i: bool(i)
+        elif not callable(pred):
+            pred = (lambda j: lambda i: i == j)(pred)
+        for i in self:
+            if pred(i):
+                return i
 
     @typing.overload
     def reduce(self, func: typing.Callable[[T, T], T]) -> T:
@@ -475,6 +533,23 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         if initial is self._SENTINEL:
             return sum(self)
         return sum(self, initial)
+
+    @typing.overload
+    def prod(self) -> T:
+        ...
+
+    @typing.overload
+    def prod(self, initial: T) -> T:
+        ...
+
+    def prod(self, initial=_SENTINEL):
+        """Return the product of all elements in this iterator.
+
+        If initial is provided, it is used as the initial value.
+        """
+        if initial is self._SENTINEL:
+            return math.prod(self)
+        return math.prod(self, start=initial)
 
     def sorted(
         self,
