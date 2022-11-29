@@ -906,9 +906,9 @@ class Grid(typing.Generic[T]):
         ...........
         """
         return (
-            irange(max(y - 1, 0), min(y + 1, len(self.data)))
+            irange(max(y - 1, 0), min(y + 1, len(self.data) - 1))
             .map(
-                lambda y_: irange(max(x - 1, 0), min(x + 1, len(self.data[0])))
+                lambda y_: irange(max(x - 1, 0), min(x + 1, len(self.data[0]) - 1))
                 .filter(lambda x_: (x, y) != (x_, y_))
                 .map(lambda x: self.data[y_][x])
             )
