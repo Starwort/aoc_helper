@@ -10,7 +10,7 @@ DEFAULT_YEAR = datetime.datetime.today().year
 TODAY = datetime.datetime.today().day
 URL = "https://adventofcode.com/{year}/day/{day}"
 WAIT_TIME = re.compile(r"You have (?:(\d+)m )?(\d+)s left to wait.")
-RANK = re.compile(r"You got rank \d+ on this star\'s leaderboard.")
+RANK = re.compile(r"You got rank \d+ on this star's leaderboard.")
 
 
 def get_cookie():
