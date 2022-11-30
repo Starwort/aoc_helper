@@ -46,7 +46,7 @@ else:
         ):
             time.sleep(0.01)
 
-    def work(msg: str, worker: typing.Callable[[], T]) -> T:
+    def _rich_work(msg: str, worker: typing.Callable[[], T]) -> T:
         with progress.Progress(
             progress.TextColumn("{task.description}"),
             progress.SpinnerColumn(),
@@ -57,6 +57,8 @@ else:
             val = worker()
             bar.advance(task)
             return val
+
+    work = _rich_work
 
 
 from .data import DATA_DIR, DEFAULT_YEAR, RANK, TODAY, URL, WAIT_TIME, get_cookie
@@ -207,11 +209,14 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
                 return submit(day, part, answer, year)
             raise ValueError("Received bad response")
 
-        msg: str = Soup(resp.text, "html.parser").article.text
+        article = Soup(resp.text, "html.parser").article
+        assert article is not None
+        msg = article.text
 
         if msg.startswith("You gave"):
             print(RED + msg + RESET)
             wait_match = WAIT_TIME.search(msg)
+            assert wait_match is not None
             pause = 60 * int(wait_match[1] or 0) + int(wait_match[2])
             wait(
                 f"{YELLOW}Waiting {BLUE}{pause}{RESET} seconds to retry...{RESET}",
@@ -234,6 +239,25 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
         json.dump(solutions, f)
 
 
+def submit_25(year: str):
+    print(f"{GREEN}Finishing Advent of Code {BLUE}{year}{RESET}!{RESET}")
+    resp = requests.post(
+        url=URL.format(day="25", year=year) + "/answer",
+        cookies=get_cookie(),
+        data={"level": "2", "answer": "0"},
+    )
+    if not resp.ok:
+        if resp.status_code == 400:
+            token_file = DATA_DIR / "token.txt"
+            token = input("Your token has expired. Please enter your new token\n>>> ")
+            token_file.write_text(token)
+            return submit_25(year)
+        raise ValueError("Received bad response")
+
+    print("Response from the server:")
+    print(resp.text.strip())
+
+
 def lazy_submit(
     day: int, solution: typing.Callable[[], typing.Any], year: int = DEFAULT_YEAR
 ) -> None:
@@ -243,6 +267,10 @@ def lazy_submit(
     """
     part = 1 if solution.__name__ == "part_one" else 2
     submission_dir = DATA_DIR / str(year) / str(day)
+    if day == 25 and part == 2:
+        # Don't try to submit part 2 if part 1 isn't solved
+        if (submission_dir / "1.solution").exists():
+            submit_25(str(year))
     solution_file = submission_dir / f"{part}.solution"
     # Check if solved
     if solution_file.exists():
