@@ -973,10 +973,15 @@ class PrioQueue(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         heapify(self._data)
 
     def __next__(self) -> T:
+        if not self._data:
+            raise StopIteration
         return heappop(self._data)
 
     def __iter__(self):
         return self
+
+    def __bool__(self) -> bool:
+        return bool(self._data)
 
     def next(self) -> T:
         return next(self)
