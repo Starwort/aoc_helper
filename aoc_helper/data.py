@@ -2,6 +2,11 @@ import datetime
 import pathlib
 import re
 
+try:
+    import importlib_metadata as metadata
+except ImportError:
+    from importlib import metadata
+
 DATA_DIR = pathlib.Path.home() / ".config" / "aoc_helper"
 if not DATA_DIR.exists():
     DATA_DIR.mkdir(parents=True)
@@ -11,6 +16,13 @@ TODAY = datetime.datetime.today().day
 URL = "https://adventofcode.com/{year}/day/{day}"
 WAIT_TIME = re.compile(r"You have (?:(\d+)m )?(\d+)s left to wait.")
 RANK = re.compile(r"You got rank \d+ on this star's leaderboard.")
+
+HEADERS = {
+    "User-Agent": (
+        f"github.com/starwort/aoc_helper v{metadata.version('aoc_helper')}"
+        " contact: Reddit u/starwort Discord @Starwort#6129"
+    )
+}
 
 
 def get_cookie():

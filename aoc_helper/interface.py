@@ -9,6 +9,8 @@ import webbrowser
 import requests
 from bs4 import BeautifulSoup as Soup
 
+from .data import HEADERS
+
 T = typing.TypeVar("T")
 
 try:
@@ -109,7 +111,9 @@ def fetch(day: int = TODAY, year: int = DEFAULT_YEAR) -> str:
             # On the first day, run a stray request to validate the user's token
             if day == 1:
                 resp = requests.get(
-                    URL.format(day=1, year=2015) + "/input", cookies=get_cookie()
+                    URL.format(day=1, year=2015) + "/input",
+                    cookies=get_cookie(),
+                    headers=HEADERS,
                 )
                 if resp.status_code == 400:
                     token_file = DATA_DIR / "token.txt"
@@ -128,7 +132,9 @@ def fetch(day: int = TODAY, year: int = DEFAULT_YEAR) -> str:
             print(GREEN + "Fetching input!" + RESET)
             _open_page(URL.format(day=day, year=year))
         resp = requests.get(
-            URL.format(day=day, year=year) + "/input", cookies=get_cookie()
+            URL.format(day=day, year=year) + "/input",
+            cookies=get_cookie(),
+            headers=HEADERS,
         )
         if not resp.ok:
             if resp.status_code == 400:
@@ -198,6 +204,7 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
             url=URL.format(day=day, year=year) + "/answer",
             cookies=get_cookie(),
             data={"level": part_, "answer": answer_},
+            headers=HEADERS,
         )
         if not resp.ok:
             if resp.status_code == 400:
@@ -245,6 +252,7 @@ def submit_25(year: str):
         url=URL.format(day="25", year=year) + "/answer",
         cookies=get_cookie(),
         data={"level": "2", "answer": "0"},
+        headers=HEADERS,
     )
     if not resp.ok:
         if resp.status_code == 400:
