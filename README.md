@@ -13,9 +13,9 @@ pip install aoc_helper
 # install the dependencies required for the Command Line Interface
 pip install aoc_helper[cli]
 # install the dependencies required for colour
-pip install aoc_helper[colour]
+pip install aoc_helper[fancy]
 # install all additional dependencies
-pip install aoc_helper[cli,colour]
+pip install aoc_helper[cli,fancy]
 ```
 
 ## Configuration
