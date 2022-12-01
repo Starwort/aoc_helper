@@ -301,13 +301,13 @@ class list(UserList, typing.Generic[T]):
     def deepcopy(self) -> "list[T]":
         return copy.deepcopy(self)
 
-    def nlargest(self, n: int) -> typing.Tuple[T, ...]:
+    def nlargest(self, n: int) -> list[T]:
         """Return the n largest elements of self."""
-        return tuple(nlargest(n, self))
+        return list(nlargest(n, self))
 
-    def nsmallest(self, n: int) -> typing.Tuple[T, ...]:
+    def nsmallest(self, n: int) -> list[T]:
         """Return the n smallest elements of self."""
-        return tuple(nsmallest(n, self))
+        return list(nsmallest(n, self))
 
     def __repr__(self) -> str:
         return f"list({super().__repr__()})"
@@ -647,13 +647,13 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         """Consume this iterator and return the number of elements it contained."""
         return self.map(lambda _: 1).sum()
 
-    def nlargest(self, n: int) -> typing.Tuple[T, ...]:
+    def nlargest(self, n: int) -> list[T]:
         """Consume this iterator and return the n largest elements."""
-        return tuple(nlargest(n, self))
+        return list(nlargest(n, self))
 
-    def nsmallest(self, n: int) -> typing.Tuple[T, ...]:
+    def nsmallest(self, n: int) -> list[T]:
         """Consume this iterator and return the n smallest elements."""
-        return tuple(nsmallest(n, self))
+        return list(nsmallest(n, self))
 
     def __repr__(self) -> str:
         return f"iter({self.it!r})"
