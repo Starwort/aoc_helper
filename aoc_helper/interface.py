@@ -39,12 +39,12 @@ else:
 
     def wait(msg: str, secs: float) -> None:
         for _ in progress.track(
-            builtins.range(int(100 * secs)),
+            builtins.range(int(10 * secs)),
             description=msg,
             show_speed=False,
             transient=True,
         ):
-            time.sleep(0.01)
+            time.sleep(0.1)
 
     def _rich_work(msg: str, worker: typing.Callable[[], T]) -> T:
         with progress.Progress(
