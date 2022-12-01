@@ -8,7 +8,7 @@ import re
 import sys
 import typing
 from collections import Counter, UserList, deque
-from heapq import heapify, heappop, heappush
+from heapq import heapify, heappop, heappush, nlargest, nsmallest
 
 from typing_extensions import ParamSpec
 
@@ -287,11 +287,11 @@ class list(UserList, typing.Generic[T]):
             subitem
             for item in self
             for subitem in (
-                item.flatten(True)
+                item.tee(1)[0].flatten(True)
                 if isinstance(item, iter)
                 else list(item).flat(True)
-                if isinstance(item, builtins.list)
-                else [item]
+                if isinstance(item, (builtins.list, list))
+                else item
             )
         )
 
@@ -300,6 +300,14 @@ class list(UserList, typing.Generic[T]):
 
     def deepcopy(self) -> "list[T]":
         return copy.deepcopy(self)
+
+    def nlargest(self, n: int) -> typing.Tuple[T, ...]:
+        """Return the n largest elements of self."""
+        return tuple(nlargest(n, self))
+
+    def nsmallest(self, n: int) -> typing.Tuple[T, ...]:
+        """Return the n smallest elements of self."""
+        return tuple(nsmallest(n, self))
 
     def __repr__(self) -> str:
         return f"list({super().__repr__()})"
@@ -583,7 +591,8 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         """Return a tuple of n iterators containing the elements of this
         iterator.
         """
-        return tuple(iter(iterator) for iterator in itertools.tee(self, n))
+        self.it, *iterators = itertools.tee(self, n + 1)
+        return tuple(iter(iterator) for iterator in iterators)
 
     def permutations(
         self, r: typing.Union[int, None] = None
@@ -623,7 +632,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
                 iterator.flatten(True)
                 if isinstance(iterator, iter)
                 else list(iterator).flat(True)
-                if isinstance(iterator, builtins.list)
+                if isinstance(iterator, (builtins.list, list))
                 else iterator
             )
         )
@@ -637,6 +646,14 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
     def count(self) -> int:
         """Consume this iterator and return the number of elements it contained."""
         return self.map(lambda _: 1).sum()
+
+    def nlargest(self, n: int) -> typing.Tuple[T, ...]:
+        """Consume this iterator and return the n largest elements."""
+        return tuple(nlargest(n, self))
+
+    def nsmallest(self, n: int) -> typing.Tuple[T, ...]:
+        """Consume this iterator and return the n smallest elements."""
+        return tuple(nsmallest(n, self))
 
     def __repr__(self) -> str:
         return f"iter({self.it!r})"
@@ -656,7 +673,7 @@ def irange(start: int, stop: int) -> iter[int]:
     """Inclusive range. Returns an iterator that
     yields values from start to stop, including both
     endpoints, stepping by one. Works even when
-    stop > start (the iterator will step backwards).
+    stop < start (the iterator will step backwards).
     """
     if start <= stop:
         return range(start, stop + 1)
