@@ -301,11 +301,11 @@ class list(UserList, typing.Generic[T]):
     def deepcopy(self) -> "list[T]":
         return copy.deepcopy(self)
 
-    def nlargest(self, n: int) -> list[T]:
+    def nlargest(self, n: int) -> "list[T]":
         """Return the n largest elements of self."""
         return list(nlargest(n, self))
 
-    def nsmallest(self, n: int) -> list[T]:
+    def nsmallest(self, n: int) -> "list[T]":
         """Return the n smallest elements of self."""
         return list(nsmallest(n, self))
 
