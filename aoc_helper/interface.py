@@ -92,7 +92,7 @@ def _pretty_print(message: str) -> None:
         raise ValueError("Failed to parse response.")
 
 
-def fetch(day: int = TODAY, year: int = DEFAULT_YEAR) -> str:
+def fetch(day: int = TODAY, year: int = DEFAULT_YEAR, never_print: bool = False) -> str:
     """Fetch and return the input for `day` of `year`.
 
     All inputs are cached in `aoc_helper.DATA_DIR`."""
@@ -148,6 +148,8 @@ def fetch(day: int = TODAY, year: int = DEFAULT_YEAR) -> str:
             raise ValueError("Received bad response")
         data = resp.text.strip("\n")
         input_path.write_text(data)
+        if not never_print:
+            print(data)
         return data
 
 
