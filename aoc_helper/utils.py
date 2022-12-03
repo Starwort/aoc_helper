@@ -12,9 +12,25 @@ from heapq import heapify, heappop, heappush, nlargest, nsmallest
 
 from typing_extensions import ParamSpec
 
+from aoc_helper.types import (
+    AddableT,
+    AddableU,
+    MultipliableT,
+    MultipliableU,
+    SupportsMean,
+    SupportsProdNoDefaultT,
+    SupportsRichComparison,
+    SupportsRichComparisonT,
+    SupportsSumNoDefaultT,
+)
+
 T = typing.TypeVar("T")
 U = typing.TypeVar("U")
+GenericU = typing.TypeVar("GenericU", bound=typing.Generic)
 P = ParamSpec("P")
+
+
+MaybeIterator = typing.Union[T, typing.Iterable["MaybeIterator[T]"]]
 
 
 def extract_ints(raw: str) -> "list[int]":
@@ -64,6 +80,14 @@ class list(UserList, typing.Generic[T]):
         """
         return list(map(func, self))
 
+    def mapped_each(
+        self: "list[typing.Iterable[T]]", func: typing.Callable[[T], U]
+    ) -> "list[list[U]]":
+        """Return a list containing the results of mapping each element of self
+        with func. The function is called on each element immediately.
+        """
+        return self.mapped(lambda i: list(i).mapped(func))
+
     def filtered(
         self, pred: typing.Union[typing.Callable[[T], bool], T, None] = None
     ) -> "list[T]":
@@ -112,7 +136,7 @@ class list(UserList, typing.Generic[T]):
 
         If there are fewer than shift elements, the iterator will be empty.
         """
-        return zip(self, self[shift:])
+        return iter(zip(self, self[shift:]))
 
     @typing.overload
     def reduce(self, func: typing.Callable[[T, T], T]) -> T:
@@ -154,7 +178,7 @@ class list(UserList, typing.Generic[T]):
         """
         if initial is self._SENTINEL:
             return list(itertools.accumulate(self, func))
-        return list(itertools.accumulate(self, func, initial))
+        return list(itertools.accumulate(self, func, initial))  # type: ignore
 
     def chunked(self, n: int) -> "list[typing.Tuple[T, ...]]":
         """Return a list containing the elements of this list in chunks
@@ -171,11 +195,15 @@ class list(UserList, typing.Generic[T]):
         return list(chunk_default(self, n, default))
 
     @typing.overload
-    def sum(self) -> T:
+    def sum(
+        self: "list[SupportsSumNoDefaultT]",
+    ) -> typing.Union[SupportsSumNoDefaultT, typing.Literal[0]]:
         ...
 
     @typing.overload
-    def sum(self, initial: T) -> T:
+    def sum(
+        self: "list[AddableT]", initial: AddableU
+    ) -> typing.Union[AddableT, AddableU]:
         ...
 
     def sum(self, initial=_SENTINEL):
@@ -185,14 +213,18 @@ class list(UserList, typing.Generic[T]):
         """
         if initial is self._SENTINEL:
             return sum(self)
-        return sum(self, initial)
+        return sum(self, typing.cast(AddableU, initial))
 
     @typing.overload
-    def prod(self) -> T:
+    def prod(
+        self: "list[SupportsProdNoDefaultT]",
+    ) -> typing.Union[T, typing.Literal[1]]:
         ...
 
     @typing.overload
-    def prod(self, initial: T) -> T:
+    def prod(
+        self: "list[MultipliableT]", initial: MultipliableU
+    ) -> typing.Union[MultipliableT, MultipliableU]:
         ...
 
     def prod(self, initial=_SENTINEL):
@@ -202,13 +234,27 @@ class list(UserList, typing.Generic[T]):
         """
         if initial is self._SENTINEL:
             return math.prod(self)
-        return math.prod(self, start=initial)
+        # math.prod isn't actually guaranteed to run for non-numerics, so we
+        # have to ignore the type error here.
+        return math.prod(self, start=initial)  # type: ignore
 
+    @typing.overload
+    def sorted(
+        self: "list[SupportsRichComparisonT]",
+        *,
+        reverse: bool = False,
+    ) -> "list[SupportsRichComparisonT]":
+        ...
+
+    @typing.overload
     def sorted(
         self,
-        key: typing.Union[typing.Callable[[T], U], None] = None,
+        key: typing.Callable[[T], SupportsRichComparison],
         reverse: bool = False,
     ) -> "list[T]":
+        ...
+
+    def sorted(self, key=None, reverse=False):
         """Return a list containing the elements of this list sorted
         according to the given key and reverse parameters.
         """
@@ -220,13 +266,39 @@ class list(UserList, typing.Generic[T]):
         """
         return list(reversed(self))
 
-    def min(self, key: typing.Union[typing.Callable[[T], U], None] = None) -> T:
+    @typing.overload
+    def min(
+        self: "iter[SupportsRichComparisonT]",
+    ) -> T:
+        ...
+
+    @typing.overload
+    def min(
+        self,
+        key: typing.Callable[[T], SupportsRichComparisonT],
+    ) -> T:
+        ...
+
+    def min(self, key=None) -> T:
         """Return the minimum element of this list, according to the given
         key.
         """
         return min(self, key=key)
 
-    def max(self, key: typing.Union[typing.Callable[[T], U], None] = None) -> T:
+    @typing.overload
+    def max(
+        self: "iter[SupportsRichComparisonT]",
+    ) -> T:
+        ...
+
+    @typing.overload
+    def max(
+        self,
+        key: typing.Callable[[T], SupportsRichComparisonT],
+    ) -> T:
+        ...
+
+    def max(self, key=None) -> T:
         """Return the maximum element of this list, according to the given
         key.
         """
@@ -236,7 +308,7 @@ class list(UserList, typing.Generic[T]):
         """Return the length of this list."""
         return len(self)
 
-    def mean(self) -> T:
+    def mean(self: "list[SupportsMean]") -> SupportsMean:
         """Statistical mean of this list.
 
         T must be summable and divisible by an integer,
@@ -244,9 +316,17 @@ class list(UserList, typing.Generic[T]):
         """
         if self.len() == 0:
             raise ValueError("Called mean() on an empty list")
-        return self.sum() / self.len()
+        return self.sum() / self.len()  # type: ignore
 
-    def median(self) -> "T":
+    @typing.overload
+    def median(self: "list[SupportsRichComparisonT]") -> T:
+        ...
+
+    @typing.overload
+    def median(self, key: typing.Callable[[T], SupportsRichComparisonT]) -> T:
+        ...
+
+    def median(self, key=None) -> T:
         """Statistical median of this list.
 
         T must be orderable and there must be at least one
@@ -258,9 +338,9 @@ class list(UserList, typing.Generic[T]):
         if self.len() == 0:
             raise ValueError("Called median() on an empty list")
         if self.len() % 2:
-            return self.sorted()[self.len() // 2]
+            return self.sorted(key=key)[self.len() // 2]  # type: ignore
         else:
-            sorted_self = self.sorted()
+            sorted_self = self.sorted(key=key)  # type: ignore
             return (sorted_self[self.len() // 2] + sorted_self[self.len() // 2 - 1]) / 2
 
     def mode(self) -> "list[T]":
@@ -275,7 +355,24 @@ class list(UserList, typing.Generic[T]):
         n_ties = max(i[1] for i in counted)
         return list(i[0] for i in counted if i[1] == n_ties)
 
-    def flat(self, recursive: bool = False) -> "list":
+    @typing.overload
+    def flat(self: "list[typing.Iterable[T]]") -> "list[T]":
+        ...
+
+    @typing.overload
+    def flat(
+        self: "list[typing.Iterable[T]]", recursive: typing.Literal[False] = False
+    ) -> "list[T]":
+        ...
+
+    @typing.overload
+    def flat(
+        self: "list[typing.Iterable[MaybeIterator[T]]]",
+        recursive: typing.Literal[True] = True,
+    ) -> "list[T]":
+        ...
+
+    def flat(self, recursive=False):
         """Flattened version of this list.
 
         If recursive is specified, flattens recursively instead
@@ -292,7 +389,7 @@ class list(UserList, typing.Generic[T]):
                 else list(item).flat(True)
                 if isinstance(item, (builtins.list, list))
                 else item
-            )
+            )  # type: ignore
         )
 
     def enumerated(self, start: int = 0) -> "list[typing.Tuple[int, T]]":
@@ -333,6 +430,14 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         """
         return iter(map(func, self))
 
+    def map_each(
+        self: "iter[typing.Iterable[T]]", func: typing.Callable[[T], U]
+    ) -> "iter[iter[U]]":
+        """Return an iterator containing the result of calling func on each
+        element in each element in this iterator.
+        """
+        return iter(self.map(lambda i: iter(i).map(func)))
+
     def filter(
         self, pred: typing.Union[typing.Callable[[T], bool], T, None] = None
     ) -> "iter[T]":
@@ -365,7 +470,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             pred = lambda i: bool(i)
         elif not callable(pred):
             pred = (lambda j: lambda i: i == j)(pred)
-        for i in self:
+        for i in self:  # type: ignore
             if pred(i):
                 return i
 
@@ -413,7 +518,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
     def foreach(self, func: typing.Callable[[T], typing.Any]) -> None:
         """Run func on every value in this iterator, immediately."""
-        for el in self:
+        for el in self:  # type: ignore
             func(el)
 
     def chunk(self, n: int) -> "iter[typing.Tuple[T, ...]]":
@@ -434,7 +539,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         self, window_size: int
     ) -> typing.Generator[typing.Tuple[T, ...], None, None]:
         elements = deque()
-        for _ in range(window_size):
+        for _ in range(window_size):  # type: ignore
             try:
                 elements.append(self.next())
             except StopIteration:
@@ -442,7 +547,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
         yield tuple(elements)
 
-        for el in self:
+        for el in self:  # type: ignore
             elements.popleft()
             elements.append(el)
             yield tuple(elements)
@@ -510,7 +615,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         ...
 
     @typing.overload
-    def collect(self, collection_type: typing.Type[U]) -> "U[T]":
+    def collect(self, collection_type: typing.Type[GenericU]) -> "GenericU[T]":
         ...
 
     def collect(self, collection_type=None):
@@ -526,11 +631,15 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         return iter(itertools.chain(self, other))
 
     @typing.overload
-    def sum(self) -> T:
+    def sum(
+        self: "iter[SupportsSumNoDefaultT]",
+    ) -> typing.Union[SupportsSumNoDefaultT, typing.Literal[0]]:
         ...
 
     @typing.overload
-    def sum(self, initial: T) -> T:
+    def sum(
+        self: "iter[AddableT]", initial: AddableU
+    ) -> typing.Union[AddableT, AddableU]:
         ...
 
     def sum(self, initial=_SENTINEL):
@@ -538,16 +647,23 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
         If initial is provided, it is used as the initial value.
         """
+        if typing.TYPE_CHECKING:
+            # HACK to make mypy happy with iterating this iter
+            self = list(self)
         if initial is self._SENTINEL:
             return sum(self)
-        return sum(self, initial)
+        return sum(self, typing.cast(AddableU, initial))
 
     @typing.overload
-    def prod(self) -> T:
+    def prod(
+        self: "iter[SupportsProdNoDefaultT]",
+    ) -> typing.Union[T, typing.Literal[1]]:
         ...
 
     @typing.overload
-    def prod(self, initial: T) -> T:
+    def prod(
+        self: "iter[MultipliableT]", initial: MultipliableU
+    ) -> typing.Union[MultipliableT, MultipliableU]:
         ...
 
     def prod(self, initial=_SENTINEL):
@@ -555,37 +671,83 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
         If initial is provided, it is used as the initial value.
         """
+        if typing.TYPE_CHECKING:
+            # HACK to make mypy happy with iterating this iter
+            self = list(self)
         if initial is self._SENTINEL:
             return math.prod(self)
-        return math.prod(self, start=initial)
+        # math.prod isn't actually guaranteed to run for non-numerics, so we
+        # have to ignore the type error here.
+        return math.prod(self, start=initial)  # type: ignore
 
+    @typing.overload
+    def sorted(
+        self: "iter[SupportsRichComparisonT]",
+        *,
+        reverse: bool = False,
+    ) -> "list[SupportsRichComparisonT]":
+        ...
+
+    @typing.overload
     def sorted(
         self,
-        key: typing.Union[typing.Callable[[T], U], None] = None,
+        key: typing.Callable[[T], SupportsRichComparison],
         reverse: bool = False,
-    ) -> "iter[T]":
-        """Return an iterator containing the elements of this iterator sorted
+    ) -> "list[T]":
+        ...
+
+    def sorted(self, key=None, reverse=False):
+        """Return a list containing the elements of this iterator sorted
         according to the given key and reverse parameters.
         """
-        return iter(sorted(self, key=key, reverse=reverse))
+        # HACK to make mypy happy with iterating this iter
+        if typing.TYPE_CHECKING:
+            self = list(self)
+        return list(sorted(self, key=key, reverse=reverse))
 
     def reversed(self) -> "iter[T]":
         """Return an iterator containing the elements of this iterator in
         reverse order.
         """
-        return iter(reversed(self))
+        return iter(reversed(list(self)))
 
-    def min(self, key: typing.Union[typing.Callable[[T], U], None] = None) -> T:
+    @typing.overload
+    def min(
+        self: "iter[SupportsRichComparisonT]",
+    ) -> T:
+        ...
+
+    @typing.overload
+    def min(
+        self,
+        key: typing.Callable[[T], SupportsRichComparisonT],
+    ) -> T:
+        ...
+
+    def min(self, key=None) -> T:
         """Return the minimum element of this iterator, according to the given
         key.
         """
-        return min(self, key=key)
+        return min(self, key=key)  # type: ignore
 
-    def max(self, key: typing.Union[typing.Callable[[T], U], None] = None) -> T:
+    @typing.overload
+    def max(
+        self: "iter[SupportsRichComparisonT]",
+    ) -> T:
+        ...
+
+    @typing.overload
+    def max(
+        self,
+        key: typing.Callable[[T], SupportsRichComparisonT],
+    ) -> T:
+        ...
+
+    def max(self, key=None) -> T:
         """Return the maximum element of this iterator, according to the given
         key.
         """
-        return max(self, key=key)
+        return max(self, key=key)  # type: ignore
 
     def tee(self, n: int = 2) -> typing.Tuple["iter[T]", ...]:
         """Return a tuple of n iterators containing the elements of this
@@ -617,24 +779,41 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         """
         return iter(itertools.combinations_with_replacement(self, r))
 
-    def flatten(self, recursive: bool = False) -> "iter":
+    @typing.overload
+    def flatten(self: "iter[typing.Iterable[T]]") -> "iter[T]":
+        ...
+
+    @typing.overload
+    def flatten(
+        self: "iter[typing.Iterable[T]]", recursive: typing.Literal[False] = False
+    ) -> "iter[T]":
+        ...
+
+    @typing.overload
+    def flatten(
+        self: "iter[typing.Iterable[MaybeIterator[T]]]",
+        recursive: typing.Literal[True] = True,
+    ) -> "iter[T]":
+        ...
+
+    def flatten(self, recursive=False):
         """Flatten this iterator.
 
         If recursive is specified, flattens recursively instead
         of by one layer.
         """
         if not recursive:
-            return iter(item for iterator in self for item in iterator)
+            return iter(item for iterator in self for item in iterator)  # type: ignore
         return iter(
             item
-            for iterator in self
+            for iterator in self  # type: ignore
             for item in (
                 iterator.flatten(True)
                 if isinstance(iterator, iter)
                 else list(iterator).flat(True)
                 if isinstance(iterator, (builtins.list, list))
                 else iterator
-            )
+            )  # type: ignore
         )
 
     def enumerate(self, start: int = 0) -> "iter[typing.Tuple[int, T]]":
