@@ -615,7 +615,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         ...
 
     @typing.overload  # TODO: why doesn't this work?
-    def collect(self, collection_type: typing.Type[GenericU]) -> "GenericU[T]":
+    def collect(self, collection_type: typing.Type[U]) -> "U[T]":
         ...
 
     def collect(self, collection_type=None):
