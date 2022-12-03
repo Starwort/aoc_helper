@@ -26,7 +26,7 @@ from aoc_helper.types import (
 
 T = typing.TypeVar("T")
 U = typing.TypeVar("U")
-GenericU = typing.TypeVar("GenericU", bound=typing.Generic)
+GenericU = typing.Generic[T]
 P = ParamSpec("P")
 
 
@@ -389,7 +389,7 @@ class list(UserList, typing.Generic[T]):
                 else list(item).flat(True)
                 if isinstance(item, (builtins.list, list))
                 else item
-            )  # type: ignore
+            )
         )
 
     def enumerated(self, start: int = 0) -> "list[typing.Tuple[int, T]]":
@@ -418,7 +418,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
     def __init__(self, it: typing.Iterable[T]) -> None:
         self.it = builtins.iter(it)
 
-    def __iter__(self) -> typing.Iterable[T]:
+    def __iter__(self) -> typing.Iterator[T]:
         return self.it.__iter__()
 
     def __next__(self) -> T:
@@ -470,7 +470,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             pred = lambda i: bool(i)
         elif not callable(pred):
             pred = (lambda j: lambda i: i == j)(pred)
-        for i in self:  # type: ignore
+        for i in self:
             if pred(i):
                 return i
 
@@ -518,7 +518,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
     def foreach(self, func: typing.Callable[[T], typing.Any]) -> None:
         """Run func on every value in this iterator, immediately."""
-        for el in self:  # type: ignore
+        for el in self:
             func(el)
 
     def chunk(self, n: int) -> "iter[typing.Tuple[T, ...]]":
@@ -538,8 +538,8 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
     def _window(
         self, window_size: int
     ) -> typing.Generator[typing.Tuple[T, ...], None, None]:
-        elements = deque()
-        for _ in range(window_size):  # type: ignore
+        elements: typing.Deque[T] = deque()
+        for _ in range(window_size):
             try:
                 elements.append(self.next())
             except StopIteration:
@@ -547,7 +547,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
         yield tuple(elements)
 
-        for el in self:  # type: ignore
+        for el in self:
             elements.popleft()
             elements.append(el)
             yield tuple(elements)
@@ -614,7 +614,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
     def collect(self) -> list[T]:
         ...
 
-    @typing.overload
+    @typing.overload  # TODO: why doesn't this work?
     def collect(self, collection_type: typing.Type[GenericU]) -> "GenericU[T]":
         ...
 
@@ -806,7 +806,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             return iter(item for iterator in self for item in iterator)  # type: ignore
         return iter(
             item
-            for iterator in self  # type: ignore
+            for iterator in self
             for item in (
                 iterator.flatten(True)
                 if isinstance(iterator, iter)
@@ -1015,7 +1015,7 @@ def decode_text(dots: typing.List[typing.List[bool]]) -> str:
     return "".join(out)
 
 
-def _default_classifier(char: str) -> int:
+def _default_classifier(char: str, /) -> int:
     if char in "0123456789":
         return int(char)
     elif char in ".#":
@@ -1041,7 +1041,7 @@ class Grid(typing.Generic[T]):
         ...
 
     @classmethod
-    def from_string(cls, data: str, classify=_default_classifier):  # type: ignore
+    def from_string(cls, data: str, classify=_default_classifier):
         """Create a grid from a string (e.g. a puzzle input).
 
         Can take a classifier to use a custom classification. The default will
@@ -1059,7 +1059,7 @@ class Grid(typing.Generic[T]):
 
         start defaults to the top left, and end defaults to the bottom right.
         """
-        to_visit = []
+        to_visit: typing.List[typing.Tuple[int, typing.Tuple[int, int]]] = []
         heappush(to_visit, (0, start or (0, 0)))
         visited = set()
         if end is None:
