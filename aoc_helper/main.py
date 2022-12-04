@@ -21,12 +21,13 @@ def parse_range(_, __, value: str) -> typing.List[int]:
     ranges = value.split(",")
     days: set[int] = set()
     for range_ in ranges:
-        if match := RANGE_REGEX.match(range_):
+        match = RANGE_REGEX.match(range_)
+        if match:
             lb = int(match[1])
             ub = int(match[2]) + 1
             days |= set(range(lb, ub))
-        elif range_.isnumeric() and 1 <= (day := int(range_)) <= 25:
-            days.add(day)
+        elif range_.isnumeric() and 1 <= int(range_) <= 25:
+            days.add(int(range_))
         elif range_ == "all":
             days = set(range(1, 26))
         else:
