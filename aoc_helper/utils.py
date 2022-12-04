@@ -1184,3 +1184,13 @@ class PrioQueue(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
     def push(self, val: T) -> None:
         heappush(self._data, val)
+
+def chinese_remainder_theorem(moduli: typing.List[int], residues: typing.List[int]) -> int:
+    from math import prod
+
+    N = prod(moduli)
+
+    return sum(
+        (div := (N // modulus)) * pow(div, -1, modulus) * residue
+        for modulus, residue in zip(moduli, residues)
+    ) % N
