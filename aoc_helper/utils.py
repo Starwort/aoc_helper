@@ -36,9 +36,53 @@ MaybeIterator = typing.Union[T, typing.Iterable["MaybeIterator[T]"]]
 def extract_ints(raw: str) -> "list[int]":
     """Utility function to extract all integers from some string.
 
-    Many inputs can be directly parsed with this function.
+    Some inputs can be directly parsed with this function.
     """
     return list(map(int, re.findall(r"((?:-|\+)?\d+)", raw)))
+
+
+def extract_uints(raw: str) -> "list[int]":
+    """Utility function to extract all integers from some string.
+
+    Minus signs will be *ignored*; the output integers will all be positive.
+
+    Some inputs can be directly parsed with this function.
+    """
+    return list(map(int, re.findall(r"(\d+)", raw)))
+
+
+def _range_from_match(range: typing.Tuple[str, str]) -> builtins.range:
+    if range[1]:
+        return builtins.range(int(range[0]), int(range[1]))
+    else:
+        return builtins.range(int(range[0]), int(range[0]))
+
+
+def _irange_from_match(range: typing.Tuple[str, str]) -> builtins.range:
+    if range[1]:
+        return builtins.range(int(range[0]), int(range[1]) + 1)
+    else:
+        return builtins.range(int(range[0]), int(range[0]) + 1)
+
+
+def extract_ranges(raw: str) -> "list[builtins.range]":
+    """Utility function to extract all ranges from some string.
+
+    Ranges are interpreted as `start-stop` and are not inclusive.
+
+    Some inputs can be directly parsed with this function.
+    """
+    return list(map(_range_from_match, re.findall(r"(\d+)(?:-(\d+))?", raw)))
+
+
+def extract_iranges(raw: str) -> "list[builtins.range]":
+    """Utility function to extract all ranges from some string.
+
+    Ranges are interpreted as `start-stop` and are inclusive.
+
+    Some inputs can be directly parsed with this function.
+    """
+    return list(map(_irange_from_match, re.findall(r"(\d+)(?:-(\d+))?", raw)))
 
 
 def chunk(
@@ -123,6 +167,33 @@ class list(UserList, typing.Generic[T]):
         for i in self:
             if pred(i):
                 return i
+
+    def any(self, pred: typing.Union[typing.Callable[[T], bool], T] = bool) -> bool:
+        """Consume this iterator and return True if any element satisfies the
+        given predicate. The default predicate is bool; therefore by default this
+        method returns True if any element is truthy.
+        """
+        if not callable(pred):
+            pred = (lambda j: lambda i: i == j)(pred)
+        return any(pred(item) for item in self)
+
+    def all(self, pred: typing.Union[typing.Callable[[T], bool], T] = bool) -> bool:
+        """Consume this iterator and return True if all elements satisfy the
+        given predicate. The default predicate is bool; therefore by default this
+        method returns True if all elements are truthy.
+        """
+        if not callable(pred):
+            pred = (lambda j: lambda i: i == j)(pred)
+        return all(pred(item) for item in self)
+
+    def none(self, pred: typing.Union[typing.Callable[[T], bool], T] = bool) -> bool:
+        """Consume this iterator and return True if no element satisfies the
+        given predicate. The default predicate is bool; therefore by default this
+        method returns True if no element is truthy.
+        """
+        if not callable(pred):
+            pred = (lambda j: lambda i: i == j)(pred)
+        return not any(pred(item) for item in self)
 
     def windowed(self, window_size: int) -> "list[typing.Tuple[T, ...]]":
         """Return an list containing the elements of this list in
@@ -439,15 +510,12 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         return iter(self.map(lambda i: iter(i).map(func)))
 
     def filter(
-        self, pred: typing.Union[typing.Callable[[T], bool], T, None] = None
+        self, pred: typing.Union[typing.Callable[[T], bool], T] = bool
     ) -> "iter[T]":
         """Return an iterator containing only the elements for which pred
         returns True.
 
-        If pred is None, return an iterator containing only elements that are
-        truthy.
-
-        If pred is a T (and T is not a callable or None), return an iterator
+        If pred is a T (and T is not callable), return an iterator
         containing only elements that compare equal to pred.
         """
         if not callable(pred) and pred is not None:
@@ -473,6 +541,33 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         for i in self:
             if pred(i):
                 return i
+
+    def any(self, pred: typing.Union[typing.Callable[[T], bool], T] = bool) -> bool:
+        """Consume this iterator and return True if any element satisfies the
+        given predicate. The default predicate is bool; therefore by default this
+        method returns True if any element is truthy.
+        """
+        if not callable(pred):
+            pred = (lambda j: lambda i: i == j)(pred)
+        return any(pred(item) for item in self)
+
+    def all(self, pred: typing.Union[typing.Callable[[T], bool], T] = bool) -> bool:
+        """Consume this iterator and return True if all elements satisfy the
+        given predicate. The default predicate is bool; therefore by default this
+        method returns True if all elements are truthy.
+        """
+        if not callable(pred):
+            pred = (lambda j: lambda i: i == j)(pred)
+        return all(pred(item) for item in self)
+
+    def none(self, pred: typing.Union[typing.Callable[[T], bool], T] = bool) -> bool:
+        """Consume this iterator and return True if no element satisfies the
+        given predicate. The default predicate is bool; therefore by default this
+        method returns True if no element is truthy.
+        """
+        if not callable(pred):
+            pred = (lambda j: lambda i: i == j)(pred)
+        return not any(pred(item) for item in self)
 
     @typing.overload
     def reduce(self, func: typing.Callable[[T, T], T]) -> T:
@@ -1185,12 +1280,18 @@ class PrioQueue(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
     def push(self, val: T) -> None:
         heappush(self._data, val)
 
-def chinese_remainder_theorem(moduli: typing.List[int], residues: typing.List[int]) -> int:
+
+def chinese_remainder_theorem(
+    moduli: typing.List[int], residues: typing.List[int]
+) -> int:
     from math import prod
 
     N = prod(moduli)
 
-    return sum(
-        (div := (N // modulus)) * pow(div, -1, modulus) * residue
-        for modulus, residue in zip(moduli, residues)
-    ) % N
+    return (
+        sum(
+            (div := (N // modulus)) * pow(div, -1, modulus) * residue
+            for modulus, residue in zip(moduli, residues)
+        )
+        % N
+    )
