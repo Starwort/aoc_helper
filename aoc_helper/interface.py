@@ -5,6 +5,7 @@ import pathlib
 import time
 import typing
 import webbrowser
+from ast import literal_eval
 
 import requests
 from bs4 import BeautifulSoup as Soup
@@ -27,9 +28,9 @@ except ImportError:
         print(msg)
         time.sleep(secs)
 
-    def work(msg: str, worker: typing.Callable[[], T]) -> T:
+    def work(msg: str, worker: typing.Callable[[typing.Any], T], data: typing.Any) -> T:
         print(msg)
-        return worker()
+        return worker(data)
 
 else:
     RED = "[red]"
@@ -48,7 +49,7 @@ else:
         ):
             time.sleep(0.1)
 
-    def _rich_work(msg: str, worker: typing.Callable[[], T]) -> T:
+    def _rich_work(msg: str, worker: typing.Callable[[typing.Any], T], data: typing.Any) -> T:
         with progress.Progress(
             progress.TextColumn("{task.description}"),
             progress.SpinnerColumn(),
@@ -56,7 +57,7 @@ else:
             transient=True,
         ) as bar:
             task = bar.add_task(msg)
-            val = worker()
+            val = worker(data)
             bar.advance(task)
             return val
 
@@ -270,7 +271,7 @@ def submit_25(year: str):
 
 
 def lazy_submit(
-    day: int, solution: typing.Callable[[], typing.Any], year: int = DEFAULT_YEAR
+    day: int, solution: typing.Callable[[], typing.Any], data: str, year: int = DEFAULT_YEAR
 ) -> None:
     """Run the function only if we haven't seen a solution.
 
@@ -304,6 +305,105 @@ def lazy_submit(
             f"{YELLOW}Running part"
             f" {RESET}{BLUE}{part}{RESET}{YELLOW} solution...{RESET}",
             solution,
+            data
         )
         if answer is not None:
             submit(day, part, answer, year)
+
+
+def get_sample_input(day: int, year: int = DEFAULT_YEAR) -> tuple[str, typing.Any]:
+    """Retrieves the example input and answer for the corresponding AOC challenge."""
+    resp = requests.post(
+        url=URL.format(day=day, year=year),
+        cookies=get_cookie(),
+        headers=HEADERS
+    )
+    soup = Soup(resp.text, "html.parser")
+
+    # Find the example test input for that day.
+    for possible_test_input in soup.find_all("pre"):
+        preceding_text = possible_test_input.previous_element.previous_element.text.lower()
+        if ("for example" in preceding_text or "consider" in preceding_text) and ":" in preceding_text:
+            test_input = possible_test_input.text.strip()
+        elif len(possible_test_input.text.split("\n")) > 1:
+            test_input = possible_test_input.text.strip()
+
+    # Attempt to retrieve answer to said example data.
+    current_part = soup.find_all("article")[-1]
+    last_sentence = current_part.find_all("p")[-2]
+
+    try:
+        answer = last_sentence.find_all("code")[-1]
+    except IndexError:
+        raise RuntimeWarning(
+            "Looks like there was an issue with retrieving the test data. Perhaps you could"
+            "pass in test data manually or ignore testing altogether?"
+        )
+    if not answer.em:
+        try:
+            answer = last_sentence.find_all("em")[-1]
+        except IndexError:
+            pass
+
+    answer = answer.text.strip().split()[-1]
+    try:
+        answer = literal_eval(answer)
+    except ValueError:
+        pass
+
+    return test_input, answer
+
+
+def test(day: int, part: int, answer: typing.Any, expected_answer: typing.Any, year: int = DEFAULT_YEAR) -> None:
+    day_ = str(day)
+    year_ = str(year)
+    part_ = str(part)
+
+    testing_dir = DATA_DIR / year_ / day_
+    _make(testing_dir)
+
+    # Load cached tests
+    tests = testing_dir / "tests.json"
+    if tests.exists():
+        with tests.open() as f:
+            test_data = json.load(f)
+    else:
+        test_data = {"1": [], "2": []}
+
+    test_data[part_].append({"answer": answer, "expected_answer": expected_answer})
+
+    assert (
+        answer == expected_answer,
+        f"The expected answer for the example test input was: {expected_answer} and your answer was {answer}."
+    )
+
+
+def lazy_test(
+    day: int,
+    parse: typing.Callable[[str], typing.Any],
+    solution: typing.Callable[[typing.Any], typing.Any],
+    year: int = DEFAULT_YEAR,
+    test_data: typing.Optional[str] = None,
+    test_answer: typing.Optional[int] = None
+) -> None:
+    """Test the function with AOC's example data only if we haven't tested it already.
+
+    Solution is expected to be named 'part_one' or 'part_two'
+    """
+    part = 1 if solution.__name__ == "part_one" else 2
+    testing_dir = DATA_DIR / str(year) / str(day)
+    testing_file = testing_dir / "tests.json"
+
+    # Check if the tests have ran for the specific part yet
+    if not testing_file.exists() or ((testing_dir / "1.solution").exists() and part != 1):
+        if test_data is None and test_answer is None:
+            test_data, test_answer = get_sample_input(day, year)
+
+        answer = work(
+            f"{YELLOW}Running the test for part"
+            f" {RESET}{BLUE}{part}{RESET}{YELLOW} solution...{RESET}",
+            solution,
+            parse(test_data)
+        )
+        if answer is not None:
+            test(day, part, answer, test_answer, year)
