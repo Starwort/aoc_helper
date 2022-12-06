@@ -5,6 +5,7 @@ import pathlib
 import time
 import typing
 import webbrowser
+from warnings import warn
 
 import requests
 from bs4 import BeautifulSoup as Soup
@@ -271,7 +272,10 @@ def submit_25(year: str):
 
 
 def lazy_submit(
-    day: int, solution: typing.Callable[[U], typing.Any], data: U, year: int = DEFAULT_YEAR
+    day: int,
+    solution: typing.Callable[[U], typing.Any],
+    data: U,
+    year: int = DEFAULT_YEAR,
 ) -> None:
     """Run the function only if we haven't seen a solution.
 
@@ -305,30 +309,36 @@ def lazy_submit(
             f"{YELLOW}Running part"
             f" {RESET}{BLUE}{part}{RESET}{YELLOW} solution...{RESET}",
             solution,
-            data
+            data,
         )
         if answer is not None:
             submit(day, part, answer, year)
 
 
-def get_sample_input(day: int, year: int = DEFAULT_YEAR) -> tuple[str, str]:
+def get_sample_input(
+    day: int, year: int = DEFAULT_YEAR
+) -> typing.Optional[typing.Tuple[str, str]]:
     """Retrieves the example input and answer for the corresponding AOC challenge."""
     resp = requests.post(
-        url=URL.format(day=day, year=year),
-        cookies=get_cookie(),
-        headers=HEADERS
+        url=URL.format(day=day, year=year), cookies=get_cookie(), headers=HEADERS
     )
     soup = Soup(resp.text, "html.parser")
 
     # Find the example test input for that day.
     for possible_test_input in soup.find_all("pre"):
-        preceding_text = possible_test_input.previous_element.previous_element.text.lower()
-        if ("for example" in preceding_text or "consider" in preceding_text) and ":" in preceding_text:
+        preceding_text = (
+            possible_test_input.previous_element.previous_element.text.lower()
+        )
+        if (
+            "for example" in preceding_text or "consider" in preceding_text
+        ) and ":" in preceding_text:
             test_input = possible_test_input.text.strip()
             break
         elif len(possible_test_input.text.split("\n")) > 1:
             test_input = possible_test_input.text.strip()
             break
+    else:
+        return None
 
     # Attempt to retrieve answer to said example data.
     current_part = soup.find_all("article")[-1]
@@ -337,10 +347,7 @@ def get_sample_input(day: int, year: int = DEFAULT_YEAR) -> tuple[str, str]:
     try:
         answer = last_sentence.find_all("code")[-1]
     except IndexError:
-        raise RuntimeWarning(
-            "Looks like there was an issue with retrieving the test data. Perhaps you could"
-            "pass in test data manually or ignore testing altogether?"
-        )
+        return None
     if not answer.em:
         try:
             answer = last_sentence.find_all("em")[-1]
@@ -352,7 +359,9 @@ def get_sample_input(day: int, year: int = DEFAULT_YEAR) -> tuple[str, str]:
     return test_input, answer
 
 
-def test(day: int, part: int, answer: str, expected_answer: str, year: int = DEFAULT_YEAR) -> None:
+def test(
+    day: int, part: int, answer: str, expected_answer: str, year: int = DEFAULT_YEAR
+) -> None:
     day_ = str(day)
     year_ = str(year)
     part_ = str(part)
@@ -374,17 +383,17 @@ def test(day: int, part: int, answer: str, expected_answer: str, year: int = DEF
         json.dump(test_data, f)
 
     assert answer == expected_answer, (
-        f"The expected answer for the example test input was: {expected_answer} and your answer was {answer}."
+        f"The expected answer for the example test input was {expected_answer} but"
+        f" your answer was {answer}."
     )
 
 
 def lazy_test(
     day: int,
-    parse: typing.Callable[[str], typing.Any],
-    solution: typing.Callable[[typing.Any], typing.Any],
+    parse: typing.Callable[[str], T],
+    solution: typing.Callable[[T], typing.Any],
     year: int = DEFAULT_YEAR,
-    test_data: typing.Optional[str] = None,
-    test_answer: typing.Optional[typing.Any] = None
+    test_data: typing.Optional[typing.Tuple[str, typing.Any]] = None,
 ) -> None:
     """Test the function with AOC's example data only if we haven't tested it already.
 
@@ -395,20 +404,32 @@ def lazy_test(
     testing_file = testing_dir / "tests.json"
 
     # Check if the tests have ran for the specific part yet
-    if not testing_file.exists() or ((testing_dir / "1.solution").exists() and part != 1):
-        if test_data is None and test_answer is None:
-            test_data, test_answer = get_sample_input(day, year)
+    if not testing_file.exists() or (
+        (testing_dir / "1.solution").exists() and part != 1
+    ):
+        if test_data is None:  # No test data passed (most common)
+            test_data = get_sample_input(day, year)
+            if test_data is None:  # No test data scraped (uncommon)
+                warn(
+                    f"An issue occurred while fetching test data for {year} day"
+                    f" {day} part {part}. You may either ignore this message, or pass"
+                    " custom test data to lazy_test.",
+                    RuntimeWarning,
+                )
+                return
+        test_input, test_answer = test_data
 
         answer = work(
             f"{YELLOW}Running the test for part"
             f" {RESET}{BLUE}{part}{RESET}{YELLOW} solution...{RESET}",
             solution,
-            parse(test_data)
+            parse(test_input),
         )
         if answer is not None:
             test(day, part, str(answer).strip(), str(test_answer).strip(), year)
             print(
-                f"{GREEN}Test for part {RESET}{YELLOW}{part}{YELLOW}{RESET} succeeded! {RESET}"
-                f"Your answer for part 2 with the test data was: {GREEN}{answer}{GREEN}{RESET}"
-                f" and the expected answer with the test data was also: {GREEN}{test_answer}{GREEN}{RESET}"
+                f"{GREEN}Test for part {RESET}{YELLOW}{part}{YELLOW}{RESET} succeeded!"
+                f" {RESET}Your answer for part 2 with the test data was:"
+                f" {GREEN}{answer}{GREEN}{RESET} and the expected answer with the test"
+                f" data was also: {GREEN}{test_answer}{GREEN}{RESET}"
             )
