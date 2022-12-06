@@ -325,8 +325,10 @@ def get_sample_input(day: int, year: int = DEFAULT_YEAR) -> tuple[str, str]:
         preceding_text = possible_test_input.previous_element.previous_element.text.lower()
         if ("for example" in preceding_text or "consider" in preceding_text) and ":" in preceding_text:
             test_input = possible_test_input.text.strip()
+            break
         elif len(possible_test_input.text.split("\n")) > 1:
             test_input = possible_test_input.text.strip()
+            break
 
     # Attempt to retrieve answer to said example data.
     current_part = soup.find_all("article")[-1]
@@ -360,7 +362,7 @@ def test(day: int, part: int, answer: str, expected_answer: str, year: int = DEF
 
     # Load cached tests
     tests = testing_dir / "tests.json"
-    if tests.exists():
+    if tests.exists() and tests.read_text():
         with tests.open() as f:
             test_data = json.load(f)
     else:
@@ -369,10 +371,9 @@ def test(day: int, part: int, answer: str, expected_answer: str, year: int = DEF
     test_data[part_].append({"answer": answer, "expected_answer": expected_answer})
 
     with tests.open("w") as f:
-        json.dump(f, test_data)
+        json.dump(test_data, f)
 
-    assert (
-        answer == expected_answer,
+    assert answer == expected_answer, (
         f"The expected answer for the example test input was: {expected_answer} and your answer was {answer}."
     )
 
@@ -405,4 +406,9 @@ def lazy_test(
             parse(test_data)
         )
         if answer is not None:
-            test(day, part, str(answer.strip()), str(test_answer.strip()), year)
+            test(day, part, str(answer).strip(), str(test_answer).strip(), year)
+            print(
+                f"{GREEN}Test for part {RESET}{YELLOW}{part}{YELLOW}{RESET} succeeded! {RESET}"
+                f"Your answer for part 2 with the test data was: {GREEN}{answer}{GREEN}{RESET}"
+                f" and the expected answer with the test data was also: {GREEN}{test_answer}{GREEN}{RESET}"
+            )
