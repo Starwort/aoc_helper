@@ -5,7 +5,6 @@ import pathlib
 import time
 import typing
 import webbrowser
-from ast import literal_eval
 
 import requests
 from bs4 import BeautifulSoup as Soup
@@ -13,6 +12,7 @@ from bs4 import BeautifulSoup as Soup
 from .data import HEADERS
 
 T = typing.TypeVar("T")
+U = typing.TypeVar("U")
 
 try:
     from rich import print, progress
@@ -28,7 +28,7 @@ except ImportError:
         print(msg)
         time.sleep(secs)
 
-    def work(msg: str, worker: typing.Callable[[typing.Any], T], data: typing.Any) -> T:
+    def work(msg: str, worker: typing.Callable[[U], T], data: U) -> T:
         print(msg)
         return worker(data)
 
@@ -49,7 +49,7 @@ else:
         ):
             time.sleep(0.1)
 
-    def _rich_work(msg: str, worker: typing.Callable[[typing.Any], T], data: typing.Any) -> T:
+    def _rich_work(msg: str, worker: typing.Callable[[U], T], data: U) -> T:
         with progress.Progress(
             progress.TextColumn("{task.description}"),
             progress.SpinnerColumn(),
@@ -271,7 +271,7 @@ def submit_25(year: str):
 
 
 def lazy_submit(
-    day: int, solution: typing.Callable[[], typing.Any], data: str, year: int = DEFAULT_YEAR
+    day: int, solution: typing.Callable[[U], typing.Any], data: U, year: int = DEFAULT_YEAR
 ) -> None:
     """Run the function only if we haven't seen a solution.
 
@@ -311,7 +311,7 @@ def lazy_submit(
             submit(day, part, answer, year)
 
 
-def get_sample_input(day: int, year: int = DEFAULT_YEAR) -> tuple[str, typing.Any]:
+def get_sample_input(day: int, year: int = DEFAULT_YEAR) -> tuple[str, str]:
     """Retrieves the example input and answer for the corresponding AOC challenge."""
     resp = requests.post(
         url=URL.format(day=day, year=year),
@@ -346,15 +346,11 @@ def get_sample_input(day: int, year: int = DEFAULT_YEAR) -> tuple[str, typing.An
             pass
 
     answer = answer.text.strip().split()[-1]
-    try:
-        answer = literal_eval(answer)
-    except ValueError:
-        pass
 
     return test_input, answer
 
 
-def test(day: int, part: int, answer: typing.Any, expected_answer: typing.Any, year: int = DEFAULT_YEAR) -> None:
+def test(day: int, part: int, answer: str, expected_answer: str, year: int = DEFAULT_YEAR) -> None:
     day_ = str(day)
     year_ = str(year)
     part_ = str(part)
@@ -372,6 +368,9 @@ def test(day: int, part: int, answer: typing.Any, expected_answer: typing.Any, y
 
     test_data[part_].append({"answer": answer, "expected_answer": expected_answer})
 
+    with tests.open("w") as f:
+        json.dump(f, test_data)
+
     assert (
         answer == expected_answer,
         f"The expected answer for the example test input was: {expected_answer} and your answer was {answer}."
@@ -384,7 +383,7 @@ def lazy_test(
     solution: typing.Callable[[typing.Any], typing.Any],
     year: int = DEFAULT_YEAR,
     test_data: typing.Optional[str] = None,
-    test_answer: typing.Optional[int] = None
+    test_answer: typing.Optional[typing.Any] = None
 ) -> None:
     """Test the function with AOC's example data only if we haven't tested it already.
 
@@ -406,4 +405,4 @@ def lazy_test(
             parse(test_data)
         )
         if answer is not None:
-            test(day, part, answer, test_answer, year)
+            test(day, part, str(answer.strip()), str(test_answer.strip()), year)
