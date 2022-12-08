@@ -324,21 +324,21 @@ def get_sample_input(
     )
     soup = Soup(resp.text, "html.parser")
 
+    example_test_inputs = []
     # Find the example test input for that day.
     for possible_test_input in soup.find_all("pre"):
         preceding_text = (
             possible_test_input.previous_element.previous_element.text.lower()
         )
         if (
-            "for example" in preceding_text or "consider" in preceding_text
+            "for example" in preceding_text or "consider" in preceding_text or "given" in preceding_text
         ) and ":" in preceding_text:
-            test_input = possible_test_input.text.strip()
-            break
-        elif len(possible_test_input.text.split("\n")) > 1:
-            test_input = possible_test_input.text.strip()
-            break
-    else:
+            example_test_inputs.append(possible_test_input.text.strip())
+
+    if not example_test_inputs:
         return None
+
+    test_input = example_test_inputs[-1]
 
     # Attempt to retrieve answer to said example data.
     current_part = soup.find_all("article")[-1]
