@@ -339,7 +339,7 @@ class list(UserList, typing.Generic[T]):
 
     @typing.overload
     def min(
-        self: "iter[SupportsRichComparisonT]",
+        self: "list[SupportsRichComparisonT]",
     ) -> T:
         ...
 
@@ -358,7 +358,7 @@ class list(UserList, typing.Generic[T]):
 
     @typing.overload
     def max(
-        self: "iter[SupportsRichComparisonT]",
+        self: "list[SupportsRichComparisonT]",
     ) -> T:
         ...
 
