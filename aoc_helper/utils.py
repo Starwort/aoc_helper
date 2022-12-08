@@ -25,6 +25,7 @@ from aoc_helper.types import (
 )
 
 T = typing.TypeVar("T")
+SpecialisationT = typing.TypeVar("SpecialisationT")
 U = typing.TypeVar("U")
 GenericU = typing.Generic[T]
 P = ParamSpec("P")
@@ -125,7 +126,8 @@ class list(UserList, typing.Generic[T]):
         return list(map(func, self))
 
     def mapped_each(
-        self: "list[typing.Iterable[T]]", func: typing.Callable[[T], U]
+        self: "list[typing.Iterable[SpecialisationT]]",
+        func: typing.Callable[[SpecialisationT], U],
     ) -> "list[list[U]]":
         """Return a list containing the results of mapping each element of self
         with func. The function is called on each element immediately.
@@ -427,20 +429,21 @@ class list(UserList, typing.Generic[T]):
         return list(i[0] for i in counted if i[1] == n_ties)
 
     @typing.overload
-    def flat(self: "list[typing.Iterable[T]]") -> "list[T]":
+    def flat(self: "list[typing.Iterable[SpecialisationT]]") -> "list[SpecialisationT]":
         ...
 
     @typing.overload
     def flat(
-        self: "list[typing.Iterable[T]]", recursive: typing.Literal[False] = False
-    ) -> "list[T]":
+        self: "list[typing.Iterable[SpecialisationT]]",
+        recursive: typing.Literal[False] = False,
+    ) -> "list[SpecialisationT]":
         ...
 
     @typing.overload
     def flat(
-        self: "list[typing.Iterable[MaybeIterator[T]]]",
+        self: "list[typing.Iterable[MaybeIterator[SpecialisationT]]]",
         recursive: typing.Literal[True] = True,
-    ) -> "list[T]":
+    ) -> "list[SpecialisationT]":
         ...
 
     def flat(self, recursive=False):
@@ -477,6 +480,52 @@ class list(UserList, typing.Generic[T]):
         """Return the n smallest elements of self."""
         return list(nsmallest(n, self))
 
+    def transposition(
+        self: "list[list[SpecialisationT]]",
+    ) -> "list[list[SpecialisationT]]":
+        """Return the transposition of this list, which is assumed to be
+        rectangular, not ragged.
+
+        This operation looks similar to a 90° rotation followed by a reflection:
+
+        ABC
+        DEF
+        HIJ
+        KLM
+
+        transposes to:
+
+        ADHK
+        BEIL
+        CFJM
+        """
+        return list(zip(*self)).mapped(list)
+
+    def into_grid(self: "list[list[SpecialisationT]]") -> "Grid[SpecialisationT]":
+        """Convert this list, which is assumed to be rectangular, not ragged,
+        into a Grid.
+
+        This function converts directly; it doesn't copy - expect strange
+        behaviour if you continue using self.
+        """
+        return Grid(self)
+
+    def into_queue(self) -> "PrioQueue[T]":
+        """Convert this list into a PrioQueue.
+
+        This function converts directly; it doesn't copy - expect strange
+        behaviour if you continue using self.
+        """
+        return PrioQueue(self.into_builtin())
+
+    def into_builtin(self) -> typing.List[T]:
+        """Unwrap this list into a builtins.list.
+
+        This function converts directly; it doesn't copy - expect strange
+        behaviour if you continue using self.
+        """
+        return self.data
+
     def __repr__(self) -> str:
         return f"list({super().__repr__()})"
 
@@ -502,7 +551,8 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         return iter(map(func, self))
 
     def map_each(
-        self: "iter[typing.Iterable[T]]", func: typing.Callable[[T], U]
+        self: "iter[typing.Iterable[SpecialisationT]]",
+        func: typing.Callable[[SpecialisationT], U],
     ) -> "iter[iter[U]]":
         """Return an iterator containing the result of calling func on each
         element in each element in this iterator.
@@ -875,20 +925,23 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         return iter(itertools.combinations_with_replacement(self, r))
 
     @typing.overload
-    def flatten(self: "iter[typing.Iterable[T]]") -> "iter[T]":
+    def flatten(
+        self: "iter[typing.Iterable[SpecialisationT]]",
+    ) -> "iter[SpecialisationT]":
         ...
 
     @typing.overload
     def flatten(
-        self: "iter[typing.Iterable[T]]", recursive: typing.Literal[False] = False
-    ) -> "iter[T]":
+        self: "iter[typing.Iterable[SpecialisationT]]",
+        recursive: typing.Literal[False] = False,
+    ) -> "iter[SpecialisationT]":
         ...
 
     @typing.overload
     def flatten(
-        self: "iter[typing.Iterable[MaybeIterator[T]]]",
+        self: "iter[typing.Iterable[MaybeIterator[SpecialisationT]]]",
         recursive: typing.Literal[True] = True,
-    ) -> "iter[T]":
+    ) -> "iter[SpecialisationT]":
         ...
 
     def flatten(self, recursive=False):
@@ -1104,9 +1157,7 @@ def decode_text(dots: typing.List[typing.List[bool]]) -> str:
     out = []
     for letter in letters:
         out.append(decode_letter(letter))
-    if "?" in out:
-        # prevent submitting malformed output
-        raise ValueError("Unrecognised letter")
+    assert "?" not in out, "Output contained unrecognised letters!"
     return "".join(out)
 
 
@@ -1125,18 +1176,10 @@ class Grid(typing.Generic[T]):
     def __init__(self, data: list[list[T]]) -> None:
         self.data = data
 
-    @typing.overload
     @classmethod
-    def from_string(cls, data: str) -> "Grid[int]":
-        ...
-
-    @typing.overload
-    @classmethod
-    def from_string(cls, data: str, classify: typing.Callable[[str], T]) -> "Grid[T]":
-        ...
-
-    @classmethod
-    def from_string(cls, data: str, classify=_default_classifier):
+    def from_string(
+        cls, data: str, classify: typing.Callable[[str], U] = _default_classifier
+    ) -> "Grid[U]":
         """Create a grid from a string (e.g. a puzzle input).
 
         Can take a classifier to use a custom classification. The default will
@@ -1144,17 +1187,148 @@ class Grid(typing.Generic[T]):
         """
         return Grid(list(data.splitlines()).mapped(lambda i: list(i).mapped(classify)))
 
+    def vertical_chunks(self, n: int) -> list["Grid[T]"]:
+        """Create a list of grids formed by splitting this grid every n rows.
+
+        Any extra rows that cannot form a group of n will be lost (see
+        vertical_chunks_default)
+        """
+        chunked_rows = self.data.chunked(n)
+        return chunked_rows.mapped(list).mapped(Grid)
+
+    def vertical_chunks_default(self, n: int, fill_value: T) -> list["Grid[T]"]:
+        """Create a list of grids formed by splitting this grid every n rows.
+
+        Grids will be padded out to have n rows, where every cell in the padded
+        rows is fill_value.
+        """
+        if self.data.len() == 0:
+            return list()
+        fill_row = list(fill_value for _ in self.data[0])
+        chunked_rows = self.data.chunked_default(n, fill_row)
+        result = chunked_rows.mapped(list)
+        result[-1] = result[-1].mapped(lambda i: i.deepcopy() if i is fill_row else i)
+        return result.mapped(Grid)
+
+    def horizontal_chunks(self, n: int) -> list["Grid[T]"]:
+        """Create a list of grids formed by splitting this grid every n columns.
+
+        Any extra columns that cannot form a group of n will be lost (see
+        horizontal_chunks_default)
+        """
+        chunked_data = [list(chunk(row, n)) for row in self.data]
+        return list(zip(*chunked_data)).mapped(list).mapped(Grid)
+
+    def horizontal_chunks_default(self, n: int, fill_value: T) -> list["Grid[T]"]:
+        """Create a list of grids formed by splitting this grid every n columns.
+
+        Rows will be padded out to have n values, where every cell in the padded
+        columns is fill_value.
+        """
+        chunked_data = [list(chunk_default(row, n, fill_value)) for row in self.data]
+        return list(zip(*chunked_data)).mapped(list).mapped(Grid)
+
+    def transpose(self) -> "Grid[T]":
+        """Create a grid that is the transposition of this grid.
+
+        This operation looks similar to a 90° rotation followed by a reflection:
+
+        ABC
+        DEF
+        HIJ
+        KLM
+
+        transposes to:
+
+        ADHK
+        BEIL
+        CFJM
+        """
+        return Grid(self.data.transposition())
+
+    def rotate_clockwise(self) -> "Grid[T]":
+        """Create a new grid that is the clockwise rotation of this grid.
+
+        self[0][0] is considered to be the top-left corner.
+        """
+        return Grid(self.data[::-1].transposition())
+
+    def rotate_anticlockwise(self) -> "Grid[T]":
+        """Create a new grid that is the anti-clockwise rotation of this grid.
+
+        self[0][0] is considered to be the top-left corner.
+        """
+        return Grid(self.data.transposition()[::-1])
+
+    def to_bool_grid(self, convert: typing.Callable[[T], bool] = bool) -> "Grid[bool]":
+        """Create a new grid of booleans by using the given conversion function
+        on self. The default conversion function is bool, converting via
+        truthiness value.
+        """
+        # Would love to replace this with a mapped_each call but it doesn't type-check
+        return Grid(self.data.mapped(lambda i: i.mapped(convert)))
+
+    def decode_as_text(self: "Grid[bool]") -> str:
+        """Decode self as a grid of letters using decode_text.
+
+        This method will check that self is the correct dimensions and raise an
+        AssertionError if not.
+        """
+        self = self.trim_to_content()
+        assert (
+            len(self.data) == 6
+        ), f"Expected a height of 6, found height of {len(self.data)}"
+        assert len(self.data[0]) % 5 == 4, (
+            f"Expected a width of 5n + 4, found width of {len(self.data[0])} (5n +"
+            f" {len(self.data[0]) % 5})"
+        )
+        return decode_text([[i for i in row] for row in self.data])
+
+    def trim_to_content(self, keep: typing.Callable[[T], bool] = bool) -> "Grid[T]":
+        """Create a new grid of booleans by using the given conversion function
+        on self. The default conversion function is bool, converting via
+        truthiness value."""
+        trim_rows = self.data.mapped(lambda i: i.none(keep))
+        if trim_rows.all():  # Trim out the entire grid
+            return Grid(list())
+        trim_cols = self.transpose().data.mapped(lambda i: i.none(keep))
+        if trim_rows.none() and trim_cols.none():  # Nothing to trim
+            return self.deepcopy()
+        trim_cols = trim_cols.enumerated()
+        trim_rows = trim_rows.enumerated()
+        top = expect(trim_rows.find(lambda i: not i[1]))[0]
+        bottom = expect(trim_rows[::-1].find(lambda i: not i[1]))[0]
+        left = expect(trim_cols.find(lambda i: not i[1]))[0]
+        right = expect(trim_cols[::-1].find(lambda i: not i[1]))[0]
+        return Grid(self.data[top : bottom + 1].mapped(lambda i: i[left : right + 1]))
+
+    @typing.overload
     def dijkstras(
-        self,
+        self: "Grid[int]",
         start: typing.Optional[typing.Tuple[int, int]] = None,
         end: typing.Optional[typing.Tuple[int, int]] = None,
     ) -> int:
+        ...
+
+    @typing.overload
+    def dijkstras(
+        self: "Grid[float]",
+        start: typing.Optional[typing.Tuple[int, int]] = None,
+        end: typing.Optional[typing.Tuple[int, int]] = None,
+    ) -> float:
+        ...
+
+    def dijkstras(
+        self,
+        start=None,
+        end=None,
+    ):
         """Use Dijkstra's algorithm to find the best path from
         start to end, and return the total cost.
 
         start defaults to the top left, and end defaults to the bottom right.
         """
-        to_visit: typing.List[typing.Tuple[int, typing.Tuple[int, int]]] = []
+        to_visit: typing.List[typing.Tuple[float, typing.Tuple[int, int]]] = []
         heappush(to_visit, (0, start or (0, 0)))
         visited = set()
         if end is None:
@@ -1241,6 +1415,50 @@ class Grid(typing.Generic[T]):
 
     def __getitem__(self, index: int) -> list[T]:
         return self.data[index]
+
+    def __repr_row(self, row: list[T]) -> str:
+        # Specialise output for empty, bool, and int
+        if row.len() == 0:
+            return "    [],\n"
+        elif narrow_list(row, bool):
+            return "    " + "".join(row.mapped("_█".__getitem__)) + "\n"
+        elif narrow_list(row, int):
+            if not hasattr(self, "_cached_int_width"):
+                self._cached_int_width = (
+                    typing.cast(Grid[int], self)
+                    .data.mapped(lambda i: i.mapped(str).mapped(len).max())
+                    .max()
+                )
+            return (
+                "    "
+                + " ".join(f"{{: >{self._cached_int_width}}}".format(i) for i in row)
+                + "\n"
+            )
+        else:
+            return "    " + repr(row.data) + ",\n"
+
+    def __repr__(self) -> str:
+        if self.data.len() == 0:
+            return "Grid([])"
+        else:
+            out = "Grid([\n"
+            for row in self.data:
+                out += self.__repr_row(row)
+            return out + "])"
+
+
+def expect(val: typing.Optional[T]) -> T:
+    """Expect that a value is not None."""
+    assert val is not None
+    return val
+
+
+def narrow_list(list: list, type: typing.Type[T]) -> typing.TypeGuard[list[T]]:
+    """Narrow the type of list based on the passed type.
+
+    Assumes that list is homogenous.
+    """
+    return isinstance(list[0], type)
 
 
 def dijkstras(
