@@ -316,9 +316,22 @@ def lazy_submit(
 
 
 def get_sample_input(
-    day: int, year: int = DEFAULT_YEAR
+    day: int, part: int, year: int = DEFAULT_YEAR
 ) -> typing.Optional[typing.Tuple[str, str]]:
     """Retrieves the example input and answer for the corresponding AOC challenge."""
+    testing_dir = DATA_DIR / str(year) / str(day)
+    testing_file = testing_dir / "tests.json"
+
+    if testing_file.exists():
+        test_info: typing.Dict[
+            str, typing.Optional[typing.Tuple[str, str]]
+        ] = json.loads(testing_file.read_text())
+    else:
+        test_info: typing.Dict[str, typing.Optional[typing.Tuple[str, str]]] = {}
+
+    if str(part) in test_info:
+        return test_info[str(part)]
+
     resp = requests.post(
         url=URL.format(day=day, year=year), cookies=get_cookie(), headers=HEADERS
     )
@@ -331,23 +344,41 @@ def get_sample_input(
             possible_test_input.previous_element.previous_element.text.lower()
         )
         if (
-            "for example" in preceding_text or "consider" in preceding_text or "given" in preceding_text
+            "for example" in preceding_text
+            or "consider" in preceding_text
+            or "given" in preceding_text
         ) and ":" in preceding_text:
             example_test_inputs.append(possible_test_input.text.strip())
 
     if not example_test_inputs:
-        return None
+        test_info[str(part)] = None
+        testing_file.write_text(json.dumps(test_info))
+        warn(
+            f"An issue occurred while fetching test data for {year} day"
+            f" {day} part {part}. You may either ignore this message, or pass"
+            " custom test data to lazy_test.",
+            RuntimeWarning,
+        )
+        return
 
     test_input = example_test_inputs[-1]
 
-    # Attempt to retrieve answer to said example data.
-    current_part = soup.find_all("article")[-1]
+    # Attempt to retrieve answer to said example data from puzzle part.
+    current_part = soup.find_all("article")[part - 1]
     last_sentence = current_part.find_all("p")[-2]
 
     try:
         answer = last_sentence.find_all("code")[-1]
     except IndexError:
-        return None
+        test_info[str(part)] = None
+        testing_file.write_text(json.dumps(test_info))
+        warn(
+            f"An issue occurred while fetching test data for {year} day"
+            f" {day} part {part}. You may either ignore this message, or pass"
+            " custom test data to lazy_test.",
+            RuntimeWarning,
+        )
+        return
     if not answer.em:
         try:
             answer = last_sentence.find_all("em")[-1]
@@ -356,35 +387,21 @@ def get_sample_input(
 
     answer = answer.text.strip().split()[-1]
 
-    return test_input, answer
+    test_data = test_input, answer
+    test_info[str(part)] = test_data
+    testing_file.write_text(json.dumps(test_info))
+    return test_data
 
 
-def test(
-    day: int, part: int, answer: str, expected_answer: str, year: int = DEFAULT_YEAR
-) -> None:
-    day_ = str(day)
-    year_ = str(year)
-    part_ = str(part)
-
-    testing_dir = DATA_DIR / year_ / day_
-    _make(testing_dir)
-
-    # Load cached tests
-    tests = testing_dir / "tests.json"
-    if tests.exists() and tests.read_text():
-        with tests.open() as f:
-            test_data = json.load(f)
-    else:
-        test_data = {"1": [], "2": []}
-
-    test_data[part_].append({"answer": answer, "expected_answer": expected_answer})
-
-    with tests.open("w") as f:
-        json.dump(test_data, f)
-
+def _test(part: int, answer: str, expected_answer: str) -> None:
     assert answer == expected_answer, (
         f"The expected answer for the example test input was {expected_answer} but"
         f" your answer was {answer}."
+    )
+    print(
+        f"{GREEN}Test for part {RESET}{BLUE}{part}{RESET} succeeded!"
+        f" The answer for part {BLUE}{part}{RESET} with the test data was:"
+        f" {BLUE}{answer}{RESET}{RESET}"
     )
 
 
@@ -403,33 +420,18 @@ def lazy_test(
     testing_dir = DATA_DIR / str(year) / str(day)
     testing_file = testing_dir / "tests.json"
 
-    # Check if the tests have ran for the specific part yet
-    if not testing_file.exists() or (
-        (testing_dir / "1.solution").exists() and part != 1
-    ):
+    # If this part has been submitted, skip running tests
+    if not (testing_dir / f"{part}.solution").exists():
         if test_data is None:  # No test data passed (most common)
             test_data = get_sample_input(day, year)
             if test_data is None:  # No test data scraped (uncommon)
-                warn(
-                    f"An issue occurred while fetching test data for {year} day"
-                    f" {day} part {part}. You may either ignore this message, or pass"
-                    " custom test data to lazy_test.",
-                    RuntimeWarning,
-                )
                 return
         test_input, test_answer = test_data
 
         answer = work(
-            f"{YELLOW}Running the test for part"
-            f" {RESET}{BLUE}{part}{RESET}{YELLOW} solution...{RESET}",
+            f"{YELLOW}Running the test for part {BLUE}{part}{RESET} solution...{RESET}",
             solution,
             parse(test_input),
         )
         if answer is not None:
-            test(day, part, str(answer).strip(), str(test_answer).strip(), year)
-            print(
-                f"{GREEN}Test for part {RESET}{YELLOW}{part}{YELLOW}{RESET} succeeded!"
-                f" {RESET}Your answer for part 2 with the test data was:"
-                f" {GREEN}{answer}{GREEN}{RESET} and the expected answer with the test"
-                f" data was also: {GREEN}{test_answer}{GREEN}{RESET}"
-            )
+            _test(part, str(answer).strip(), str(test_answer).strip())
