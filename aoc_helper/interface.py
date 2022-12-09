@@ -432,7 +432,6 @@ def lazy_test(
     """
     part = 1 if solution.__name__ == "part_one" else 2
     testing_dir = DATA_DIR / str(year) / str(day)
-    testing_file = testing_dir / "tests.json"
 
     # If this part has been submitted, skip running tests
     if not (testing_dir / f"{part}.solution").exists():
