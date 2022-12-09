@@ -186,9 +186,7 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
             "has already been solved.\nThe solution was: "
             f"{BLUE}{solution}{RESET}"
         )
-        match = RANK.search(solutions[part_][solution])
-        if match:
-            _pretty_print(match.group(0))
+        _print_rank(solutions[part_][solution])
         return
 
     # Check if answer has already been submitted
@@ -236,19 +234,27 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
             )
         else:
             break
-    _pretty_print(msg)
 
     if msg.startswith("That's the"):
+        _print_rank(msg)
         solution_file.write_text(answer_)
         if part == 1:
             if not resp.url.endswith("#part2"):
                 resp.url += "#part2"  # scroll to part 2
             _open_page(resp.url)  # open part 2 in the user's browser
+    else:
+        _pretty_print(msg)
 
     # Cache submission
     solutions[part_][answer_] = msg
     with submissions.open("w") as f:
         json.dump(solutions, f)
+
+
+def _print_rank(msg: str) -> None:
+    match = RANK.search(msg)
+    if match:
+        _pretty_print(f"You got rank {match.group(1)} for this puzzle")
 
 
 def submit_25(year: str):
@@ -301,9 +307,7 @@ def lazy_submit(
             "has already been solved.\nThe solution was: "
             f"{BLUE}{solution_}{RESET}"
         )
-        match = RANK.search(solutions[str(part)][solution_])
-        if match:
-            _pretty_print(match.group(0))
+        _print_rank(solutions[str(part)][solution_])
     else:
         answer = work(
             f"{YELLOW}Running part"
@@ -361,13 +365,12 @@ def get_sample_input(
         )
         return
 
-    test_input = example_test_inputs[-1]
-
-    # Attempt to retrieve answer to said example data from puzzle part.
-    current_part = soup.find_all("article")[part - 1]
-    last_sentence = current_part.find_all("p")[-2]
-
     try:
+        test_input = example_test_inputs[-1]
+
+        # Attempt to retrieve answer to said example data from puzzle part.
+        current_part = soup.find_all("article")[part - 1]
+        last_sentence = current_part.find_all("p")[-2]
         answer = last_sentence.find_all("code")[-1]
     except IndexError:
         test_info[str(part)] = None
@@ -385,7 +388,18 @@ def get_sample_input(
         except IndexError:
             pass
 
-    answer = answer.text.strip().split()[-1]
+    try:
+        answer = answer.text.strip().split()[-1]
+    except IndexError:
+        test_info[str(part)] = None
+        testing_file.write_text(json.dumps(test_info))
+        warn(
+            f"An issue occurred while fetching test data for {year} day"
+            f" {day} part {part}. You may either ignore this message, or pass"
+            " custom test data to lazy_test.",
+            RuntimeWarning,
+        )
+        return
 
     test_data = test_input, answer
     test_info[str(part)] = test_data

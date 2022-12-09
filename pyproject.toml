@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aoc_helper"
-version = "1.7.3"
+version = "1.7.4"
 authors = [{name = "Starwort"}, {name = "salt-die"}]
 description = "A helper package for Advent of Code"
 classifiers = [
