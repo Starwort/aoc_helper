@@ -436,7 +436,7 @@ def lazy_test(
     # If this part has been submitted, skip running tests
     if not (testing_dir / f"{part}.solution").exists():
         if test_data is None:  # No test data passed (most common)
-            test_data = get_sample_input(day, year)
+            test_data = get_sample_input(day, part, year)
             if test_data is None:  # No test data scraped (uncommon)
                 return
         test_input, test_answer = test_data
