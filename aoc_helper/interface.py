@@ -413,7 +413,7 @@ def _test(part: int, answer: str, expected_answer: str) -> None:
         f" your answer was {answer}."
     )
     print(
-        f"{GREEN}Test for part {RESET}{BLUE}{part}{RESET} succeeded!"
+        f"{GREEN}Test for part {BLUE}{part}{RESET} succeeded!"
         f" The answer for part {BLUE}{part}{RESET} with the test data was:"
         f" {BLUE}{answer}{RESET}{RESET}"
     )
