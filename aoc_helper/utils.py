@@ -1124,7 +1124,7 @@ LETTERS: typing.Dict[int, str] = {
     9795991: "R",
     7889182: "S",
     6920601: "U",
-    4475409: "Y",
+    # 4475409: "Y",
     15803535: "Z",
 }
 
@@ -1154,11 +1154,9 @@ def decode_text(dots: typing.List[typing.List[bool]]) -> str:
     """
     broken_rows = [list(chunk_default(row, 5, False)) for row in dots]
     letters = list(zip(*broken_rows))
-    out = []
-    for letter in letters:
-        out.append(decode_letter(letter))
-    assert "?" not in out, "Output contained unrecognised letters!"
-    return "".join(out)
+    out = "".join(decode_letter(letter) for letter in letters)
+    assert "?" not in out, f"Output {out} contained unrecognised letters!"
+    return out
 
 
 def _default_classifier(char: str, /) -> int:
