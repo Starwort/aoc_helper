@@ -324,6 +324,7 @@ def get_sample_input(
 ) -> typing.Optional[typing.Tuple[str, str]]:
     """Retrieves the example input and answer for the corresponding AOC challenge."""
     testing_dir = DATA_DIR / str(year) / str(day)
+    _make(testing_dir)
     testing_file = testing_dir / "tests.json"
 
     if testing_file.exists():
