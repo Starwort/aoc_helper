@@ -17,6 +17,7 @@ from aoc_helper.types import (
     AddableU,
     MultipliableT,
     MultipliableU,
+    SubtractableT,
     SupportsMean,
     SupportsProdNoDefaultT,
     SupportsRichComparison,
@@ -760,7 +761,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         ...
 
     @typing.overload  # TODO: why doesn't this work?
-    def collect(self, collection_type: typing.Type[U]) -> "U[T]":
+    def collect(self, collection_type: typing.Type[U]) -> "U[T]":  # type: ignore
         ...
 
     def collect(self, collection_type=None):
@@ -1300,57 +1301,9 @@ class Grid(typing.Generic[T]):
         right = expect(trim_cols[::-1].find(lambda i: not i[1]))[0]
         return Grid(self.data[top : bottom + 1].mapped(lambda i: i[left : right + 1]))
 
-    @typing.overload
-    def dijkstras(
-        self: "Grid[int]",
-        start: typing.Optional[typing.Tuple[int, int]] = None,
-        end: typing.Optional[typing.Tuple[int, int]] = None,
-    ) -> int:
-        ...
-
-    @typing.overload
-    def dijkstras(
-        self: "Grid[float]",
-        start: typing.Optional[typing.Tuple[int, int]] = None,
-        end: typing.Optional[typing.Tuple[int, int]] = None,
-    ) -> float:
-        ...
-
-    def dijkstras(
-        self,
-        start=None,
-        end=None,
-    ):
-        """Use Dijkstra's algorithm to find the best path from
-        start to end, and return the total cost.
-
-        start defaults to the top left, and end defaults to the bottom right.
-        """
-        to_visit: typing.List[typing.Tuple[float, typing.Tuple[int, int]]] = []
-        heappush(to_visit, (0, start or (0, 0)))
-        visited = set()
-        if end is None:
-            target = len(self.data[0]) - 1, len(self.data) - 1
-        else:
-            target = end
-
-        while True:
-            cost, (x, y) = heappop(to_visit)
-            if (x, y) in visited:
-                continue
-            if (x, y) == target:
-                return cost
-            visited.add((x, y))
-            if x > 0:
-                heappush(to_visit, (cost + self.data[y][x - 1], (x - 1, y)))
-            if x < len(self.data[0]) - 1:
-                heappush(to_visit, (cost + self.data[y][x + 1], (x + 1, y)))
-            if y > 0:
-                heappush(to_visit, (cost + self.data[y - 1][x], (x, y - 1)))
-            if y < len(self.data) - 1:
-                heappush(to_visit, (cost + self.data[y + 1][x], (x, y + 1)))
-
-    def neighbours(self, x: int, y: int) -> list[T]:
+    def neighbours(
+        self, x: int, y: int
+    ) -> list[typing.Tuple[typing.Tuple[int, int], T]]:
         """Return the neighbours of a point in the grid (but not the point itself).
 
         Examples below:
@@ -1373,12 +1326,14 @@ class Grid(typing.Generic[T]):
             .map(
                 lambda y_: irange(max(x - 1, 0), min(x + 1, len(self.data[0]) - 1))
                 .filter(lambda x_: (x, y) != (x_, y_))
-                .map(lambda x: self.data[y_][x])
+                .map(lambda x: ((x, y_), self.data[y_][x]))
             )
             .flatten(False)
         ).collect()
 
-    def orthogonal_neighbours(self, x: int, y: int) -> list[T]:
+    def orthogonal_neighbours(
+        self, x: int, y: int
+    ) -> list[typing.Tuple[typing.Tuple[int, int], T]]:
         """Return the orthogonal neighbours of a point in the grid (but not the
         point itself).
 
@@ -1399,14 +1354,68 @@ class Grid(typing.Generic[T]):
         """
         rv = list()
         if x > 0:
-            rv.append(self.data[y][x - 1])
+            rv.append(((y, x - 1), self.data[y][x - 1]))
         if x < len(self.data[0]) - 1:
-            rv.append(self.data[y][x + 1])
+            rv.append(((y, x + 1), self.data[y][x + 1]))
         if y > 0:
-            rv.append(self.data[y - 1][x])
+            rv.append(((y - 1, x), self.data[y - 1][x]))
         if y < len(self.data) - 1:
-            rv.append(self.data[y + 1][x])
+            rv.append(((y + 1, x), self.data[y + 1][x]))
         return rv
+
+    def pathfind(
+        self: "Grid[AddableT]",
+        start=None,
+        end=None,
+        valid_traversal: typing.Callable[
+            [AddableT, AddableT], bool
+        ] = lambda i, j: True,
+        cost_function: typing.Callable[[AddableT, AddableT], AddableT] = (
+            lambda i, j: j - i  # type: ignore
+        ),
+        neighbour_type: typing.Literal["ortho", "full"] = "ortho",
+        initial_cost: AddableT = 0,
+    ) -> typing.Optional[AddableT]:
+        """Use Dijkstra's algorithm to find the best path from start to end, and
+        return the total cost.
+
+        start defaults to the top left, and end defaults to the bottom right.
+
+        valid_traversal is a function that takes the start value and the end
+        value of a potential traversal, and returns whether that traversal is
+        valid. The default is that any traversal is valid.
+
+        cost_function is a function that takes the start value and the end value
+        of a traversal, and returns the cost of that traversal. The default is
+        that the cost is the difference between the two values.
+
+        initial_cost is the zero-value of the cell type. You should only need to
+        modify this if you're using a non-numeric type.
+        """
+        to_visit = PrioQueue([(typing.cast(AddableT, initial_cost), start or (0, 0))])
+        visited = set()
+        if end is None:
+            target = len(self.data[0]) - 1, len(self.data) - 1
+        else:
+            target = end
+
+        neighbours = (
+            self.orthogonal_neighbours if neighbour_type == "ortho" else self.neighbours
+        )
+
+        for cost, (x, y) in to_visit:
+            if (x, y) in visited:
+                continue
+            if (x, y) == target:
+                return cost
+            visited.add((x, y))
+            for neighbour, value in neighbours(x, y):
+                if valid_traversal(self.data[y][x], value):
+                    to_visit.push(
+                        (cost + cost_function(self.data[y][x], value), neighbour)
+                    )
+
+    dijkstras = pathfind
 
     def deepcopy(self) -> "Grid[T]":
         return Grid(self.data.deepcopy())
@@ -1459,17 +1468,20 @@ def narrow_list(list: list, type: typing.Type[T]) -> typing.TypeGuard[list[T]]:
     return isinstance(list[0], type)
 
 
-def dijkstras(
+def pathfind(
     grid: typing.List[typing.List[int]],
     start: typing.Optional[typing.Tuple[int, int]] = None,
     end: typing.Optional[typing.Tuple[int, int]] = None,
-) -> int:
-    """Use Dijkstra's algorithm to find the best path from
-    start to end, and return the total cost.
+) -> typing.Optional[int]:
+    """Use Dijkstra's algorithm to find the best path from start to end, and
+    return the total cost.
 
     start defaults to the top left, and end defaults to the bottom right.
     """
-    return Grid(list(grid).mapped(list)).dijkstras(start, end)
+    return Grid(list(grid).mapped(list)).pathfind(start, end)
+
+
+dijkstras = pathfind
 
 
 class PrioQueue(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):

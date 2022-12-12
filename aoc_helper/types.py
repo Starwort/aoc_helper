@@ -26,6 +26,11 @@ class SupportsRAdd(Protocol[_T_contra, _T_co]):
         ...
 
 
+class SupportsSub(Protocol[_T_contra, _T_co]):
+    def __sub__(self, __x: _T_contra) -> _T_co:
+        ...
+
+
 class SupportsMul(Protocol[_T_contra, _T_co]):
     def __mul__(self, __x: _T_contra) -> _T_co:
         ...
@@ -53,6 +58,8 @@ SupportsSumNoDefaultT = TypeVar(
 
 AddableT = TypeVar("AddableT", bound=SupportsAdd[Any, Any])
 AddableU = TypeVar("AddableU", bound=SupportsAdd[Any, Any])
+
+SubtractableT = TypeVar("SubtractableT", bound=SupportsSub[Any, Any])
 
 
 class _SupportsProdWithNoDefaultGiven(

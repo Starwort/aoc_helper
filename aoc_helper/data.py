@@ -3,9 +3,9 @@ import pathlib
 import re
 
 try:
-    import importlib_metadata as metadata
+    import importlib_metadata as metadata  # type: ignore
 except ImportError:
-    from importlib import metadata
+    from importlib import metadata  # type: ignore
 
 DATA_DIR = pathlib.Path.home() / ".config" / "aoc_helper"
 if not DATA_DIR.exists():
