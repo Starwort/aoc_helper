@@ -1354,13 +1354,13 @@ class Grid(typing.Generic[T]):
         """
         rv = list()
         if x > 0:
-            rv.append(((y, x - 1), self.data[y][x - 1]))
+            rv.append(((x - 1, y), self.data[y][x - 1]))
         if x < len(self.data[0]) - 1:
-            rv.append(((y, x + 1), self.data[y][x + 1]))
+            rv.append(((x + 1, y), self.data[y][x + 1]))
         if y > 0:
-            rv.append(((y - 1, x), self.data[y - 1][x]))
+            rv.append(((x, y - 1), self.data[y - 1][x]))
         if y < len(self.data) - 1:
-            rv.append(((y + 1, x), self.data[y + 1][x]))
+            rv.append(((x, y + 1), self.data[y + 1][x]))
         return rv
 
     def pathfind(
@@ -1507,6 +1507,9 @@ class PrioQueue(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
     def push(self, val: T) -> None:
         heappush(self._data, val)
+
+    def __repr__(self) -> str:
+        return f"PrioQueue({self._data})"
 
 
 def chinese_remainder_theorem(
