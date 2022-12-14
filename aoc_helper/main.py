@@ -8,7 +8,7 @@ except ImportError:
     print("Missing dependencies for the CLI. Please `pip install aoc_helper[cli]`")
     exit(1)
 
-from .data import DATA_DIR, DEFAULT_YEAR
+from .data import DATA_DIR, DEFAULT_YEAR, RANK
 from .interface import fetch as fetch_input
 from .interface import submit as submit_answer
 
@@ -86,3 +86,36 @@ def browser(state: typing.Optional[bool]):
     else:
         file.touch()
         print("Disabled web browser automation")
+
+
+@cli.command()
+@click.argument("days", callback=parse_range)
+@click.argument("year", type=int, default=DEFAULT_YEAR)
+@click.option(
+    "--type",
+    type=click.Choice(["input", "submissions", "solutions", "1", "2", "tests", "all"]),
+    help="What to delete",
+    default="input",
+)
+def clean(days: typing.List[int], year: int, type: str):
+    """Clean the cached --type data for DAYS of YEAR"""
+    for day in days:
+        if type in ("input", "all"):
+            (DATA_DIR / f"{year}" / f"{day}.in").unlink(True)
+        if type in ("submissions", "all"):
+            file = DATA_DIR / f"{year}" / f"{day}" / "submissions.json"
+            if (
+                not file.exists()
+                or not RANK.search(file.read_text())
+                or click.confirm(
+                    f"Are you sure you want to delete your submissions for {year} day"
+                    f" {day}? Your cached rank will be forgotten"
+                )
+            ):
+                file.unlink(True)
+        if type in ("solutions", "all", "1"):
+            (DATA_DIR / f"{year}" / f"{day}" / "1.solution").unlink(True)
+        if type in ("solutions", "all", "2"):
+            (DATA_DIR / f"{year}" / f"{day}" / "2.solution").unlink(True)
+        if type in ("tests", "all"):
+            (DATA_DIR / f"{year}" / f"{day}" / "tests.json").unlink(True)

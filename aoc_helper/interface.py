@@ -435,6 +435,10 @@ def lazy_test(
     testing_dir = DATA_DIR / str(year) / str(day)
     _make(testing_dir)
 
+    # If this is part 2, skip fetching/running tests if part 1 hasn't been submitted
+    if part == 2 and not (testing_dir / "1.solution").exists():
+        return
+
     # If this part has been submitted, skip running tests
     if not (testing_dir / f"{part}.solution").exists():
         if test_data is None:  # No test data passed (most common)
