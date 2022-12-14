@@ -1,4 +1,5 @@
 import builtins
+import collections
 import copy
 import functools
 import itertools
@@ -543,7 +544,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         return self.it.__iter__()
 
     def __next__(self) -> T:
-        return next(self)
+        return next(self.it)
 
     def map(self, func: typing.Callable[[T], U]) -> "iter[U]":
         """Return an iterator containing the result of calling func on each
@@ -1452,6 +1453,118 @@ class Grid(typing.Generic[T]):
             for row in self.data:
                 out += self.__repr_row(row)
             return out + "])"
+
+
+def points_between(
+    start: typing.Tuple[int, int], end: typing.Tuple[int, int]
+) -> iter[typing.Tuple[int, int]]:
+    """Return an iterator of points between start and end, inclusive.
+    Start to end must be horizontal, vertical, or a perfect diagonal.
+    """
+    dx = end[0] - start[0]
+    dy = end[1] - start[1]
+    assert abs(dx) == abs(dy) or dx == 0 or dy == 0
+    if dx == 0:
+        return iter(zip(itertools.repeat(start[0]), irange(start[1], end[1])))
+    elif dy == 0:
+        return iter(zip(irange(start[0], end[0]), itertools.repeat(start[1])))
+    else:
+        return iter(zip(irange(start[0], end[0]), irange(start[1], end[1])))
+
+
+class SparseGrid(typing.Generic[T]):
+    data: typing.DefaultDict[typing.Tuple[int, int], T]
+
+    def __init__(self, default_factory: typing.Callable[[], T]) -> None:
+        self.data = collections.defaultdict(default_factory)
+
+    def draw_line(
+        self,
+        start: typing.Tuple[int, int],
+        end: typing.Tuple[int, int],
+        value: T,
+    ) -> None:
+        """Draw a line on a sparse grid, setting all points between start and end
+        to value.
+        """
+        for x, y in points_between(start, end):
+            self[x, y] = value
+
+    def draw_lines(
+        self,
+        lines: typing.Iterable[typing.Tuple[int, int]],
+        value: T,
+    ) -> None:
+        """Draw a series of lines on a sparse grid, setting all points between
+        each pair of points to value.
+        """
+        _lines: list[typing.Tuple[int, int]] = list(lines)
+        if _lines:
+            x, y = _lines[0]  # allows for lists to be used instead of tuples
+            self[x, y] = value
+        for start, end in _lines.windowed(2):
+            self.draw_line(start, end, value)
+
+    def bounds(self, empty: builtins.list[T]) -> typing.Tuple[int, int, int, int]:
+        """Return the bounds of a sparse grid, as a tuple of (min_x, min_y, max_x, max_y)."""
+        if len(self) == 0:
+            return 0, 0, 0, 0
+        else:
+            return (
+                min(x for x, _ in filter(lambda i: self[i] not in empty, self)),
+                min(y for _, y in filter(lambda i: self[i] not in empty, self)),
+                max(x for x, _ in filter(lambda i: self[i] not in empty, self)),
+                max(y for _, y in filter(lambda i: self[i] not in empty, self)),
+            )
+
+    def pretty_print(
+        self, to_char: typing.Callable[[T], str], empty: builtins.list[T]
+    ) -> None:
+        """Print a sparse grid to the console."""
+        min_x, min_y, max_x, max_y = self.bounds(empty)
+        max_y_width = max(len(str(max_y)), len(str(min_y)))
+        max_x_width = max(len(str(max_x)), len(str(min_x)))
+        x_labels = [
+            f"{x:={max_x_width}}" if x % 2 == 0 else (" " * max_x_width)
+            for x in irange(min_x, max_x)
+        ]
+        for char in range(max_x_width):
+            print(" " * max_y_width, end=" ")
+            for label in x_labels:
+                print(label[char], end="")
+            print()
+        for y in irange(min_y, max_y):
+            print(f"{y:={max_y_width}}", end=" ")
+            for x in irange(min_x, max_x):
+                print(to_char(self[x, y]), end="")
+            print()
+
+    def __getitem__(self, index: typing.Tuple[int, int]) -> T:
+        return self.data[index]
+
+    def __setitem__(self, index: typing.Tuple[int, int], value: T) -> None:
+        self.data[index] = value
+
+    def __delitem__(self, index: typing.Tuple[int, int]) -> None:
+        del self.data[index]
+
+    def __len__(self) -> int:
+        return len(self.data)
+
+    def __iter__(self) -> iter[typing.Tuple[int, int]]:
+        return iter(self.data)
+
+    def __repr__(self) -> str:
+        return f"SparseGrid({self.data})"
+
+    def keys(self) -> iter[typing.Tuple[int, int]]:
+        return iter(self.data.keys())
+
+    def values(self) -> iter[T]:
+        return iter(self.data.values())
+
+    def items(self) -> iter[typing.Tuple[typing.Tuple[int, int], T]]:
+        return iter(self.data.items())
 
 
 def expect(val: typing.Optional[T]) -> T:

@@ -2,8 +2,12 @@ import aoc_helper
 from aoc_helper import (
     Grid,
     PrioQueue,
+    SparseGrid,
     decode_text,
     extract_ints,
+    extract_iranges,
+    extract_ranges,
+    extract_uints,
     frange,
     irange,
     iter,
