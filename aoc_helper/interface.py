@@ -274,7 +274,9 @@ def submit_25(year: str):
         raise ValueError("Received bad response")
 
     print("Response from the server:")
-    print(resp.text.strip())
+    article = Soup(resp.text, "html.parser").article
+    assert article is not None
+    print(article.text.strip())
 
 
 def lazy_submit(

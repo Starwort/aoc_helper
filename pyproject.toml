@@ -1,29 +1,29 @@
 [build-system]
-requires = ["setuptools>=61.2"]
 build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.2"]
 
 [project]
-name = "aoc_helper"
-version = "1.7.11"
 authors = [{name = "Starwort"}, {name = "salt-die"}]
-description = "A helper package for Advent of Code"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
 ]
-urls = {Homepage = "https://github.com/Starwort/aoc_helper"}
-requires-python = ">=3.6"
 dependencies = [
-    "requests",
-    "beautifulsoup4",
-    "typing",
-    "typing_extensions",
+  "requests",
+  "beautifulsoup4",
+  "typing",
+  "typing_extensions",
 ]
+description = "A helper package for Advent of Code"
+name = "aoc_helper"
+requires-python = ">=3.6"
+urls = {Homepage = "https://github.com/Starwort/aoc_helper"}
+version = "1.7.12"
 
 [project.readme]
-file = "README.md"
 content-type = "text/markdown"
+file = "README.md"
 
 [project.scripts]
 aoc = "aoc_helper.main:cli"
