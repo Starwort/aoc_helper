@@ -392,7 +392,7 @@ def get_sample_input(
             pass
 
     try:
-        answer = answer.text.strip().split()[-1]
+        answer = answer.text.strip("\n").split()[-1]
     except IndexError:
         test_info[str(part)] = None
         testing_file.write_text(json.dumps(test_info))
