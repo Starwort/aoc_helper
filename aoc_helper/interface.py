@@ -18,6 +18,8 @@ U = typing.TypeVar("U")
 try:
     from rich import print, progress
 except ImportError:
+    from builtins import print  # suppress a Pylance warning
+
     RED = ""
     YELLOW = ""
     GREEN = ""
