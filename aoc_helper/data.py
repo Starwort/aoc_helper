@@ -19,8 +19,8 @@ RANK = re.compile(r"You (?:got|achieved) rank (\d+) on this star's leaderboard."
 
 HEADERS = {
     "User-Agent": (
-        f"github.com/starwort/aoc_helper v{metadata.version('aoc_helper')}"
-        " contact: Reddit u/starwort Discord @Starwort#6129"
+        f"github.com/starwort/aoc_helper v{metadata.version('aoc_helper')} contact:"
+        " Discord @starwort Github https://github.com/Starwort/aoc_helper/issues"
     )
 }
 
