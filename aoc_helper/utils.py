@@ -27,13 +27,14 @@ from aoc_helper.types import (
 )
 
 T = typing.TypeVar("T")
-SpecialisationT = typing.TypeVar("SpecialisationT")
+SpecialisationT = typing.TypeVar("SpecialisationT", covariant=True)
 U = typing.TypeVar("U")
 GenericU = typing.Generic[T]
 P = ParamSpec("P")
 
 
-MaybeIterator = typing.Union[T, typing.Iterable["MaybeIterator[T]"]]
+Iterable = typing.Union["iter[T]", typing.Iterable[T]]
+MaybeIterator = typing.Union[T, Iterable["MaybeIterator[T]"]]
 
 
 def extract_ints(raw: str) -> "list[int]":
@@ -88,9 +89,7 @@ def extract_iranges(raw: str) -> "list[builtins.range]":
     return list(map(_irange_from_match, re.findall(r"(\d+)(?:-(\d+))?", raw)))
 
 
-def chunk(
-    iterable: typing.Iterable[T], chunk_size: int
-) -> typing.Iterable[tuple[T, ...]]:
+def chunk(iterable: Iterable[T], chunk_size: int) -> Iterable[tuple[T, ...]]:
     """Utility function to chunk an iterable into chunks of a given size.
 
     If there are not enough elements in the iterable to fill the last chunk,
@@ -100,8 +99,8 @@ def chunk(
 
 
 def chunk_default(
-    iterable: typing.Iterable[T], chunk_size: int, default: T
-) -> typing.Iterable[tuple[T, ...]]:
+    iterable: Iterable[T], chunk_size: int, default: T
+) -> Iterable[tuple[T, ...]]:
     """Utility function to chunk an iterable into chunks of a given size.
 
     If there are not enough elements in the iterable to fill the last chunk,
@@ -128,7 +127,7 @@ class list(UserList, typing.Generic[T]):
         return list(map(func, self))
 
     def mapped_each(
-        self: "list[typing.Iterable[SpecialisationT]]",
+        self: "list[Iterable[SpecialisationT]]",
         func: typing.Callable[[SpecialisationT], U],
     ) -> "list[list[U]]":
         """Return a list containing the results of mapping each element of self
@@ -288,7 +287,7 @@ class list(UserList, typing.Generic[T]):
         """
         if initial is self._SENTINEL:
             return sum(self)
-        return sum(self, typing.cast(AddableU, initial))
+        return sum(self, initial)  # type: ignore
 
     @typing.overload
     def prod(
@@ -358,7 +357,7 @@ class list(UserList, typing.Generic[T]):
         """Return the minimum element of this list, according to the given
         key.
         """
-        return min(self, key=key)
+        return min(self, key=key)  # type: ignore
 
     @typing.overload
     def max(
@@ -377,7 +376,7 @@ class list(UserList, typing.Generic[T]):
         """Return the maximum element of this list, according to the given
         key.
         """
-        return max(self, key=key)
+        return max(self, key=key)  # type: ignore
 
     def len(self) -> int:
         """Return the length of this list."""
@@ -431,19 +430,19 @@ class list(UserList, typing.Generic[T]):
         return list(i[0] for i in counted if i[1] == n_ties)
 
     @typing.overload
-    def flat(self: "list[typing.Iterable[SpecialisationT]]") -> "list[SpecialisationT]":
+    def flat(self: "list[Iterable[SpecialisationT]]") -> "list[SpecialisationT]":
         ...
 
     @typing.overload
     def flat(
-        self: "list[typing.Iterable[SpecialisationT]]",
+        self: "list[Iterable[SpecialisationT]]",
         recursive: typing.Literal[False] = False,
     ) -> "list[SpecialisationT]":
         ...
 
     @typing.overload
     def flat(
-        self: "list[typing.Iterable[MaybeIterator[SpecialisationT]]]",
+        self: "list[Iterable[MaybeIterator[SpecialisationT]]]",
         recursive: typing.Literal[True] = True,
     ) -> "list[SpecialisationT]":
         ...
@@ -537,7 +536,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
     _SENTINEL = object()
 
-    def __init__(self, it: typing.Iterable[T]) -> None:
+    def __init__(self, it: Iterable[T]) -> None:
         self.it = builtins.iter(it)
 
     def __iter__(self) -> typing.Iterator[T]:
@@ -553,7 +552,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         return iter(map(func, self))
 
     def map_each(
-        self: "iter[typing.Iterable[SpecialisationT]]",
+        self: "iter[Iterable[SpecialisationT]]",
         func: typing.Callable[[SpecialisationT], U],
     ) -> "iter[iter[U]]":
         """Return an iterator containing the result of calling func on each
@@ -771,7 +770,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             collection_type = list
         return collection_type(self)
 
-    def chain(self, other: typing.Iterable[T]) -> "iter[T]":
+    def chain(self, other: Iterable[T]) -> "iter[T]":
         """Return an iterator containing the elements of this iterator followed
         by the elements of other.
         """
@@ -799,7 +798,9 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             self = list(self)
         if initial is self._SENTINEL:
             return sum(self)
-        return sum(self, typing.cast(AddableU, initial))
+        # sum isn't actually guaranteed to run for non-numerics, so we have to
+        # ignore the type error here.
+        return sum(self, initial)  # type: ignore
 
     @typing.overload
     def prod(
@@ -928,32 +929,35 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
     @typing.overload
     def flatten(
-        self: "iter[typing.Iterable[SpecialisationT]]",
+        self: "iter[Iterable[SpecialisationT]]",
     ) -> "iter[SpecialisationT]":
         ...
 
     @typing.overload
     def flatten(
-        self: "iter[typing.Iterable[SpecialisationT]]",
+        self: "iter[Iterable[SpecialisationT]]",
         recursive: typing.Literal[False] = False,
     ) -> "iter[SpecialisationT]":
         ...
 
     @typing.overload
     def flatten(
-        self: "iter[typing.Iterable[MaybeIterator[SpecialisationT]]]",
+        self: "iter[Iterable[MaybeIterator[SpecialisationT]]]",
         recursive: typing.Literal[True] = True,
     ) -> "iter[SpecialisationT]":
         ...
 
-    def flatten(self, recursive=False):
+    def flatten(
+        self: "iter[Iterable[typing.Any]]",
+        recursive: bool = False,
+    ) -> "iter[typing.Any]":
         """Flatten this iterator.
 
         If recursive is specified, flattens recursively instead
         of by one layer.
         """
         if not recursive:
-            return iter(item for iterator in self for item in iterator)  # type: ignore
+            return iter(item for iterator in self for item in iterator)
         return iter(
             item
             for iterator in self
@@ -963,7 +967,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
                 else list(iterator).flat(True)
                 if isinstance(iterator, (builtins.list, list))
                 else iterator
-            )  # type: ignore
+            )
         )
 
     def enumerate(self, start: int = 0) -> "iter[typing.Tuple[int, T]]":
@@ -1323,13 +1327,15 @@ class Grid(typing.Generic[T]):
         ...........
         """
         return (
-            irange(max(y - 1, 0), min(y + 1, len(self.data) - 1))
-            .map(
+            irange(max(y - 1, 0), min(y + 1, len(self.data) - 1)).map(
                 lambda y_: irange(max(x - 1, 0), min(x + 1, len(self.data[0]) - 1))
                 .filter(lambda x_: (x, y) != (x_, y_))
                 .map(lambda x: ((x, y_), self.data[y_][x]))
             )
-            .flatten(False)
+            # something to do with variance, but to be honest I don't really
+            # understand the error. The code works, but a type-fixing PR is
+            # welcome.
+            .flatten(False)  # type: ignore
         ).collect()
 
     def orthogonal_neighbours(
@@ -1492,7 +1498,7 @@ class SparseGrid(typing.Generic[T]):
 
     def draw_lines(
         self,
-        lines: typing.Iterable[typing.Tuple[int, int]],
+        lines: Iterable[typing.Tuple[int, int]],
         value: T,
     ) -> None:
         """Draw a series of lines on a sparse grid, setting all points between
@@ -1591,7 +1597,10 @@ def pathfind(
 
     start defaults to the top left, and end defaults to the bottom right.
     """
-    return Grid(list(grid).mapped(list)).pathfind(start, end)
+    # something to do with variance, but to be honest I don't really
+    # understand the error. The code works, but a type-fixing PR is
+    # welcome.
+    return Grid(list(grid).mapped(list)).pathfind(start, end)  # type: ignore
 
 
 dijkstras = pathfind
