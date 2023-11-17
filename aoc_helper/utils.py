@@ -433,7 +433,7 @@ class list(UserList, typing.Generic[T]):
             return self.sorted(key=key)[self.len() // 2]  # type: ignore
         else:
             sorted_self = self.sorted(key=key)  # type: ignore
-            return (sorted_self[self.len() // 2] + sorted_self[self.len() // 2 - 1]) / 2
+            return (sorted_self[self.len() // 2] + sorted_self[self.len() // 2 - 1]) / 2  # type: ignore
 
     def mode(self) -> "list[T]":
         """Statistical mode of this list.
