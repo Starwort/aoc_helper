@@ -27,6 +27,8 @@ pip install aoc_helper[cli]
 pip install aoc_helper[fancy]
 # install all additional dependencies
 pip install aoc_helper[cli,fancy]
+# or
+pip install aoc_helper[full]
 ```
 
 ## Configuration
