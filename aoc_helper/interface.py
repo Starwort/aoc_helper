@@ -1,3 +1,4 @@
+import sys
 import builtins
 import datetime
 import json
@@ -10,7 +11,7 @@ from warnings import warn
 import requests
 from bs4 import BeautifulSoup as Soup
 
-from .data import HEADERS
+from .data import HEADERS, LEADERBOARD_URL
 
 T = typing.TypeVar("T")
 U = typing.TypeVar("U")
@@ -99,7 +100,15 @@ def _pretty_print(message: str) -> None:
 def fetch(day: int = TODAY, year: int = DEFAULT_YEAR, never_print: bool = False) -> str:
     """Fetch and return the input for `day` of `year`.
 
+    If `--practice` is provided on the command line, pretend that today is the
+    day of the puzzle and wait for puzzle unlock accordingly. 'today' is
+    determined by UTC; from 0:00 to 5:00 UTC, this puzzle will block until 5:00
+    UTC - after that, until 0:00 UTC the next day, input fetching will be
+    instant.
+
     All inputs are cached in `aoc_helper.DATA_DIR`."""
+    import sys
+
     day_ = str(day)
     year_ = str(year)
 
@@ -111,6 +120,8 @@ def fetch(day: int = TODAY, year: int = DEFAULT_YEAR, never_print: bool = False)
     else:
         unlock = datetime.datetime(year, 12, day, 5)
         now = datetime.datetime.utcnow()
+        if "--practice" in sys.argv:
+            unlock = unlock.replace(year=now.year, day=now.day)
         if now < unlock:
             # On the first day, run a stray request to validate the user's token
             if day == 1:
@@ -157,6 +168,98 @@ def fetch(day: int = TODAY, year: int = DEFAULT_YEAR, never_print: bool = False)
         return data
 
 
+def _load_leaderboard_times(
+    day: int, year: int = DEFAULT_YEAR
+) -> typing.Tuple[typing.List[datetime.timedelta], typing.List[datetime.timedelta]]:
+    day_ = str(day)
+    year_ = str(year)
+
+    day_dir = DATA_DIR / year_ / day_
+    _make(day_dir)
+
+    # Load cached leaderboards
+    leaderboards = day_dir / "leaderboards.json"
+    if leaderboards.exists():
+        with leaderboards.open() as f:
+            # ([seconds], [seconds])
+            data: typing.List[typing.List[int]] = json.load(f)
+            return [datetime.timedelta(seconds=t) for t in data[0]], [datetime.timedelta(seconds=t) for t in data[1]]  # type: ignore
+    else:
+        leaderboard_page = requests.get(
+            LEADERBOARD_URL.format(day=day, year=year), headers=HEADERS
+        )
+        soup = Soup(leaderboard_page.text, "html.parser")
+        times = soup.select(".leaderboard-entry")
+        part_1_times: typing.List[datetime.timedelta] = []
+        part_2_times: typing.List[datetime.timedelta] = []
+        in_part_2 = False
+        for time in times:
+            if time.span.text == "  1)":  # type: ignore
+                in_part_2 = not in_part_2
+            time_to_solve = datetime.datetime.strptime(
+                time.select_one(".leaderboard-time").text,  # type: ignore
+                "%b %d  %H:%M:%S",
+            ) - datetime.datetime(1900, 12, day)
+            if in_part_2:
+                part_2_times.append(time_to_solve)
+            else:
+                part_1_times.append(time_to_solve)
+        if not part_1_times:
+            # no part 2 leaderboard, so boards were read in backwards
+            part_2_times, part_1_times = part_1_times, part_2_times
+        if len(part_1_times) == len(part_2_times) == 100:
+            # both leaderboards are full, cache them
+            with leaderboards.open("w") as f:
+                json.dump(
+                    (
+                        [t.total_seconds() for t in part_1_times],
+                        [t.total_seconds() for t in part_2_times],
+                    ),
+                    f,
+                )
+        return part_1_times, part_2_times
+
+
+def _report_practice_result(day: int, part: int, year: int = DEFAULT_YEAR) -> None:
+    if "--practice" not in sys.argv:
+        return
+    solved_time = datetime.datetime.utcnow().time()
+    hours = solved_time.hour - 5
+    solve_time = datetime.timedelta(
+        hours=solved_time.hour - 5,
+        minutes=solved_time.minute,
+        seconds=solved_time.second,
+        microseconds=solved_time.microsecond,
+    )
+    if hours > 0:
+        solve_time_str = f"{hours:02}:{solved_time.minute:02}:{solved_time.second:02}"
+    else:
+        solve_time_str = (
+            f"{solved_time.minute:02}:{solved_time.second:02}.{solved_time.microsecond // 10_000:02}"
+        )
+    print(f"{GREEN}You solved the puzzle in {BLUE}{solve_time_str}{GREEN}!{RESET}")
+    import bisect
+
+    leaderboard = _load_leaderboard_times(day, year)[part]
+    best_possible_rank = bisect.bisect_left(leaderboard, solve_time) + 1
+    worst_possible_rank = bisect.bisect_right(leaderboard, solve_time) + 1
+    if best_possible_rank > 100:
+        print(f"{YELLOW}You would not have achieved a leaderboard position.{RESET}")
+    elif best_possible_rank == worst_possible_rank:
+        print(f"{GOLD}You would have achieved rank {best_possible_rank}!{RESET}")
+    else:
+        span = worst_possible_rank - best_possible_rank
+        approx_rank = best_possible_rank + round(
+            span * solved_time.microsecond / 1_000_000
+        )
+        if worst_possible_rank > 100:
+            worst_possible_rank = "100+"
+        print(
+            f"{GOLD}You would have achieved approximately rank"
+            f" {approx_rank} ({best_possible_rank} to {worst_possible_rank})!{RESET}"
+        )
+
+
 def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) -> None:
     """Submit a solution.
 
@@ -183,6 +286,15 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
     solution_file = submission_dir / f"{part}.solution"
     if solution_file.exists():
         solution = solution_file.read_text()
+        if "--practice" in sys.argv:
+            if solution == answer_:
+                _report_practice_result(day, part, year)
+            else:
+                print(
+                    f"{RED}Submitted {BLUE}{answer_}{RESET}; that's not the right"
+                    f" answer.{RESET}\n"
+                )
+            return
         print(
             f"Day {BLUE}{day}{RESET} part {BLUE}{part}{RESET} "
             "has already been solved.\nThe solution was: "
@@ -240,6 +352,7 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
     if msg.startswith("That's the"):
         _print_rank(msg)
         solution_file.write_text(answer_)
+        _report_practice_result(day, part, year)
         if part == 1:
             if not resp.url.endswith("#part2"):
                 resp.url += "#part2"  # scroll to part 2
@@ -289,7 +402,8 @@ def lazy_submit(
 ) -> None:
     """Run the function only if we haven't seen a solution.
 
-    Will also run the solution if `--force-run` is passed on the command line.
+    Will also run the solution if `--force-run` or `--practice` is passed on the
+    command line.
 
     solution is expected to be named 'part_one' or 'part_two'
     """
@@ -303,7 +417,11 @@ def lazy_submit(
             submit_25(str(year))
     solution_file = submission_dir / f"{part}.solution"
     # Check if solved
-    if solution_file.exists() and not "--force-run" in sys.argv:
+    if (
+        solution_file.exists()
+        and "--force-run" not in sys.argv
+        and "--practice" not in sys.argv
+    ):
         # Load cached solutions
         submissions = submission_dir / "submissions.json"
         with submissions.open() as f:
