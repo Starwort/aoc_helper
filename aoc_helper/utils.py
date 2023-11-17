@@ -9,6 +9,7 @@ import re
 import sys
 import typing
 from collections import Counter, UserList, deque
+from collections.abc import Hashable
 from heapq import heapify, heappop, heappush, nlargest, nsmallest
 
 from typing_extensions import ParamSpec
@@ -1674,6 +1675,55 @@ class PrioQueue(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
     def __repr__(self) -> str:
         return f"PrioQueue({self._data})"
+
+
+def search(
+    state: T,
+    finished: typing.Callable[[T], bool],
+    next_states: typing.Callable[[T], typing.Iterable[T]],
+    heuristic: typing.Callable[[T], float] = lambda i: 0,
+    freeze: typing.Callable[[T], Hashable] | None = None,
+) -> typing.Tuple[int, typing.List[T]]:
+    """Perform A* (or Dijkstra if heuristic is not provided) search on a state
+    space, returning the number of steps and all states in the chosen path
+    (including both start and end point).
+
+    Will optimise to avoid revisiting seen states if the state type is hashable,
+    or if the freeze function is provided. The freeze function will take
+    priority over the default hashing behaviour for the state type, if present.
+
+    It is probably a good idea to either make your state type hashable, or
+    provide a freeze function.
+    """
+
+    queue = PrioQueue([(heuristic(state), int(), state, [state])])
+    visited = set()
+    for _, steps, state, history in queue:
+        if finished(state):
+            return steps, history
+        # check for freeze first, as it allows for caller customisation without
+        # having to make a custom class in order to modify hash behaviour of
+        # their state type (might be useful for e.g. making certain parts of
+        # a state equivalent when by default they wouldn't be)
+        if freeze is not None:
+            frozen = freeze(state)
+            if frozen in visited:
+                continue
+            visited.add(frozen)
+        elif isinstance(state, Hashable):
+            if state in visited:
+                continue
+            visited.add(state)
+        for next_state in next_states(state):
+            queue.push(
+                (
+                    steps + 1 + heuristic(next_state),
+                    steps + 1,
+                    next_state,
+                    history + [next_state],
+                )
+            )
+    raise ValueError("No path found; ran out of states to visit")
 
 
 def chinese_remainder_theorem(
