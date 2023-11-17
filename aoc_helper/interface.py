@@ -289,8 +289,12 @@ def lazy_submit(
 ) -> None:
     """Run the function only if we haven't seen a solution.
 
+    Will also run the solution if `--force-run` is passed on the command line.
+
     solution is expected to be named 'part_one' or 'part_two'
     """
+    import sys
+
     part = 1 if solution.__name__ == "part_one" else 2
     submission_dir = DATA_DIR / str(year) / str(day)
     if day == 25 and part == 2:
@@ -299,7 +303,7 @@ def lazy_submit(
             submit_25(str(year))
     solution_file = submission_dir / f"{part}.solution"
     # Check if solved
-    if solution_file.exists():
+    if solution_file.exists() and not "--force-run" in sys.argv:
         # Load cached solutions
         submissions = submission_dir / "submissions.json"
         with submissions.open() as f:
