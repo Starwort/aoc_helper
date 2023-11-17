@@ -121,7 +121,7 @@ def fetch(day: int = TODAY, year: int = DEFAULT_YEAR, never_print: bool = False)
         unlock = datetime.datetime(year, 12, day, 5)
         now = datetime.datetime.utcnow()
         if "--practice" in sys.argv:
-            unlock = unlock.replace(year=now.year, day=now.day)
+            unlock = unlock.replace(year=now.year, month=now.month, day=now.day)
         if now < unlock:
             # On the first day, run a stray request to validate the user's token
             if day == 1:
