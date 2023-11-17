@@ -123,6 +123,17 @@ class list(UserList, typing.Generic[T]):
             data = []
         super().__init__(data)
 
+    @typing.overload
+    def __getitem__(self, index: int) -> T:
+        ...
+
+    @typing.overload
+    def __getitem__(self, index: slice) -> "list[T]":
+        ...
+
+    def __getitem__(self, index):
+        return super().__getitem__(index)
+
     def iter(self) -> "iter[T]":
         """Return an iterator over the list."""
         return iter(self)
