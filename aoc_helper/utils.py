@@ -1679,6 +1679,11 @@ class PrioQueue(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 def chinese_remainder_theorem(
     moduli: typing.List[int], residues: typing.List[int]
 ) -> int:
+    """Given the numbers N % modulus_i = residue_i, return N % prod(modulus_i).
+
+    Moduli must be pairwise coprime (i.e. no pair of moduli may share a factor
+    other than 1) - violating this constraint will produce an undefined result.
+    """
     from math import prod
 
     N = prod(moduli)
