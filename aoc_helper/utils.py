@@ -545,19 +545,19 @@ class list(UserList, typing.Generic[T]):
         behaviour if you continue using self.
         """
         return self.data
-    
+
     def combinations(self, r: int) -> "list[typing.Tuple[T, ...]]":
         """Return a list over the combinations, without replacement, of
         length r of the elements of this list.
         """
         return list(itertools.combinations(self, r))
-    
+
     def combinations_with_replacement(self, r: int) -> "list[typing.Tuple[T, ...]]":
         """Return a list over the combinations, with replacement, of
         length r of the elements of this list.
         """
         return list(itertools.combinations_with_replacement(self, r))
-    
+
     def permutations(
         self, r: typing.Union[int, None] = None
     ) -> "list[typing.Tuple[T, ...]]":
