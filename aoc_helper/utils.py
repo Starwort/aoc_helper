@@ -116,6 +116,13 @@ class list(UserList, typing.Generic[T]):
 
     _SENTINEL = object()
 
+    def __init__(self, data: typing.Optional[Iterable[T]] = None) -> None:
+        # I don't know why this is necessary, but UserList seems to default to
+        # constructing as list[Any] instead of list[T] if I don't do this.
+        if data is None:
+            data = []
+        super().__init__(data)
+
     def iter(self) -> "iter[T]":
         """Return an iterator over the list."""
         return iter(self)
@@ -127,7 +134,7 @@ class list(UserList, typing.Generic[T]):
         return list(map(func, self))
 
     def mapped_each(
-        self: "list[Iterable[SpecialisationT]]",
+        self: "list[Iterable[SpecialisationT]] | list[list[SpecialisationT]]",
         func: typing.Callable[[SpecialisationT], U],
     ) -> "list[list[U]]":
         """Return a list containing the results of mapping each element of self
@@ -485,7 +492,8 @@ class list(UserList, typing.Generic[T]):
         self: "list[list[SpecialisationT]]",
     ) -> "list[list[SpecialisationT]]":
         """Return the transposition of this list, which is assumed to be
-        rectangular, not ragged.
+        rectangular, not ragged. If this list was ragged, then it will be
+        cropped to the largest rectangle that is fully populated.
 
         This operation looks similar to a 90° rotation followed by a reflection:
 
@@ -526,6 +534,29 @@ class list(UserList, typing.Generic[T]):
         behaviour if you continue using self.
         """
         return self.data
+    
+    def combinations(self, r: int) -> "list[typing.Tuple[T, ...]]":
+        """Return a list over the combinations, without replacement, of
+        length r of the elements of this list.
+        """
+        return list(itertools.combinations(self, r))
+    
+    def combinations_with_replacement(self, r: int) -> "list[typing.Tuple[T, ...]]":
+        """Return a list over the combinations, with replacement, of
+        length r of the elements of this list.
+        """
+        return list(itertools.combinations_with_replacement(self, r))
+    
+    def permutations(
+        self, r: typing.Union[int, None] = None
+    ) -> "list[typing.Tuple[T, ...]]":
+        """Return a list over the permutations of the elements of this
+        list.
+
+        If r is provided, the returned list will only contain permutations
+        of size r.
+        """
+        return list(itertools.permutations(self, r))
 
     def __repr__(self) -> str:
         return f"list({super().__repr__()})"
