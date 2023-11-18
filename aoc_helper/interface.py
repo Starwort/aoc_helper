@@ -240,7 +240,7 @@ def _report_practice_result(day: int, part: int, year: int = DEFAULT_YEAR) -> No
     print(f"{GREEN}You solved the puzzle in {BLUE}{solve_time_str}{GREEN}!{RESET}")
     import bisect
 
-    leaderboard = _load_leaderboard_times(day, year)[part]
+    leaderboard = _load_leaderboard_times(day, year)[part - 1]
     best_possible_rank = bisect.bisect_left(leaderboard, solve_time) + 1
     worst_possible_rank = bisect.bisect_right(leaderboard, solve_time) + 1
     if best_possible_rank > 100:
