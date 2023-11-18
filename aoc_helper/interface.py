@@ -237,24 +237,24 @@ def _practice_result_for(day: int, year: int) -> typing.List[int]:
 def _calculate_practice_result(day: int, part: int, year: int) -> None:
     if "--practice" not in sys.argv:
         return
-    solved_time = datetime.datetime.utcnow()
+    now = datetime.datetime.utcnow()
     solve_time = datetime.timedelta(
-        hours=solved_time.hour - 5,
-        minutes=solved_time.minute,
-        seconds=solved_time.second,
-        microseconds=solved_time.microsecond,
+        hours=now.hour - 5,
+        minutes=now.minute,
+        seconds=now.second,
+        microseconds=now.microsecond,
     )
     practice_data_dir = PRACTICE_DATA_DIR / str(year) / str(day)
     _make(practice_data_dir)
-    with open(
-        practice_data_dir
-        / f"{solved_time.year:04}-{solved_time.month:02}-{solved_time.day:02}.json",
-        "w+",
-    ) as f:
-        try:
+
+    filename = f"{now.year:04}-{now.month:02}-{now.day:02}.json"
+
+    try:
+        with open(practice_data_dir / filename) as f:
             data: typing.List[float] = json.load(f)
-        except json.decoder.JSONDecodeError:
-            data = []
+    except json.decoder.JSONDecodeError:
+        data = []
+    with open(practice_data_dir / filename, "w") as f:
         data.append(solve_time.total_seconds())
         json.dump(data, f)
     _report_practice_result(day, part, year, solve_time)
