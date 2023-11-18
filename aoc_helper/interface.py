@@ -11,7 +11,7 @@ from warnings import warn
 import requests
 from bs4 import BeautifulSoup as Soup
 
-from .data import HEADERS, LEADERBOARD_URL
+from .data import HEADERS, LEADERBOARD_URL, PRACTICE_DATA_DIR
 
 T = typing.TypeVar("T")
 U = typing.TypeVar("U")
@@ -220,22 +220,56 @@ def _load_leaderboard_times(
         return part_1_times, part_2_times
 
 
-def _report_practice_result(day: int, part: int, year: int = DEFAULT_YEAR) -> None:
+def _practice_result_for(day: int, year: int) -> typing.List[int]:
+    practice_data_dir = PRACTICE_DATA_DIR / str(year) / str(day)
+    _make(practice_data_dir)
+    try:
+        with open(
+            practice_data_dir
+            / f"{datetime.datetime.utcnow().year:04}-{datetime.datetime.utcnow().month:02}-{datetime.datetime.utcnow().day:02}.json",
+            "r",
+        ) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
+
+
+def _calculate_practice_result(day: int, part: int, year: int) -> None:
     if "--practice" not in sys.argv:
         return
-    solved_time = datetime.datetime.utcnow().time()
-    hours = solved_time.hour - 5
+    solved_time = datetime.datetime.utcnow()
     solve_time = datetime.timedelta(
         hours=solved_time.hour - 5,
         minutes=solved_time.minute,
         seconds=solved_time.second,
         microseconds=solved_time.microsecond,
     )
+    practice_data_dir = PRACTICE_DATA_DIR / str(year) / str(day)
+    _make(practice_data_dir)
+    with open(
+        practice_data_dir
+        / f"{solved_time.year:04}-{solved_time.month:02}-{solved_time.day:02}.json",
+        "w+",
+    ) as f:
+        try:
+            data: typing.List[float] = json.load(f)
+        except json.decoder.JSONDecodeError:
+            data = []
+        data.append(solve_time.total_seconds())
+        json.dump(data, f)
+    _report_practice_result(day, part, year, solve_time)
+
+
+def _report_practice_result(
+    day: int, part: int, year: int, solve_time: datetime.timedelta
+) -> None:
+    minutes, seconds = divmod(solve_time.seconds, 60)
+    hours, minutes = divmod(minutes, 60)
     if hours > 0:
-        solve_time_str = f"{hours:02}:{solved_time.minute:02}:{solved_time.second:02}"
+        solve_time_str = f"{hours:02}:{minutes:02}:{seconds:02}"
     else:
         solve_time_str = (
-            f"{solved_time.minute:02}:{solved_time.second:02}.{solved_time.microsecond // 10_000:02}"
+            f"{minutes:02}:{seconds:02}.{solve_time.microseconds // 10_000:02}"
         )
     print(f"{GREEN}You solved the puzzle in {BLUE}{solve_time_str}{GREEN}!{RESET}")
     import bisect
@@ -250,7 +284,7 @@ def _report_practice_result(day: int, part: int, year: int = DEFAULT_YEAR) -> No
     else:
         span = worst_possible_rank - best_possible_rank
         approx_rank = best_possible_rank + round(
-            span * solved_time.microsecond / 1_000_000
+            span * solve_time.microseconds / 1_000_000
         )
         if worst_possible_rank > 100:
             worst_possible_rank = "100+"
@@ -288,7 +322,7 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
         solution = solution_file.read_text()
         if "--practice" in sys.argv:
             if solution == answer_:
-                _report_practice_result(day, part, year)
+                _calculate_practice_result(day, part, year)
             else:
                 print(
                     f"{RED}Submitted {BLUE}{answer_}{RESET}; that's not the right"
@@ -352,7 +386,7 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
     if msg.startswith("That's the"):
         _print_rank(msg)
         solution_file.write_text(answer_)
-        _report_practice_result(day, part, year)
+        _calculate_practice_result(day, part, year)
         if part == 1:
             if not resp.url.endswith("#part2"):
                 resp.url += "#part2"  # scroll to part 2
@@ -420,7 +454,11 @@ def lazy_submit(
     if (
         solution_file.exists()
         and "--force-run" not in sys.argv
-        and "--practice" not in sys.argv
+        and (
+            "--practice" not in sys.argv  # not in practice mode
+            or len(_practice_result_for(day, year))
+            >= part  # or solved today in practice
+        )
     ):
         # Load cached solutions
         submissions = submission_dir / "submissions.json"

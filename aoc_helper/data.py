@@ -10,6 +10,9 @@ except ImportError:
 DATA_DIR = pathlib.Path.home() / ".config" / "aoc_helper"
 if not DATA_DIR.exists():
     DATA_DIR.mkdir(parents=True)
+PRACTICE_DATA_DIR = DATA_DIR / "practice"
+if not PRACTICE_DATA_DIR.exists():
+    PRACTICE_DATA_DIR.mkdir(parents=True)
 
 DEFAULT_YEAR = datetime.datetime.today().year
 TODAY = datetime.datetime.today().day
