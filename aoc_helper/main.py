@@ -1,3 +1,4 @@
+import os
 import pathlib
 import re
 import typing
@@ -8,7 +9,7 @@ except ImportError:
     print("Missing dependencies for the CLI. Please `pip install aoc_helper[cli]`")
     exit(1)
 
-from .data import DATA_DIR, DEFAULT_YEAR, RANK
+from .data import DATA_DIR, DEFAULT_YEAR, PRACTICE_DATA_DIR, RANK
 from .interface import fetch as fetch_input
 from .interface import submit as submit_answer
 
@@ -93,7 +94,9 @@ def browser(state: typing.Optional[bool]):
 @click.argument("year", type=int, default=DEFAULT_YEAR)
 @click.option(
     "--type",
-    type=click.Choice(["input", "submissions", "solutions", "1", "2", "tests", "all"]),
+    type=click.Choice(
+        ["input", "submissions", "solutions", "1", "2", "tests", "practice", "all"]
+    ),
     help="What to delete",
     default="input",
 )
@@ -113,6 +116,15 @@ def clean(days: typing.List[int], year: int, type: str):
                 )
             ):
                 file.unlink(True)
+        if type in ("practice", "all"):
+            folder = PRACTICE_DATA_DIR / f"{year}" / f"{day}"
+            if not folder.exists() or click.confirm(
+                f"Are you sure you want to delete your practice data for {year} day"
+                f" {day}? {len(os.listdir(folder))} entries will be forgotten"
+            ):
+                for file in os.listdir(folder):
+                    (folder / file).unlink(True)
+                folder.rmdir()
         if type in ("solutions", "all", "1"):
             (DATA_DIR / f"{year}" / f"{day}" / "1.solution").unlink(True)
         if type in ("solutions", "all", "2"):
