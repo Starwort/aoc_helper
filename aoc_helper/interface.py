@@ -266,8 +266,10 @@ def _estimate_practice_rank(
     import bisect
 
     leaderboard = _load_leaderboard_times(day, year)[part - 1]
-    best_possible_rank = bisect.bisect_left(leaderboard, solve_time) + 1
-    worst_possible_rank = bisect.bisect_right(leaderboard, solve_time) + 1
+    # aoc truncates solve times, so we do too for the purpose of sorting
+    truncated_solve_time = datetime.timedelta(seconds = int(solve_time.total_seconds()))
+    best_possible_rank = bisect.bisect_left(leaderboard, truncated_solve_time) + 1
+    worst_possible_rank = bisect.bisect_right(leaderboard, truncated_solve_time) + 1
     if best_possible_rank > 100:
         return None
     span = worst_possible_rank - best_possible_rank
