@@ -1,15 +1,19 @@
+import json
 import os
 import pathlib
 import re
 import typing
+from datetime import date, timedelta
 
 try:
     import click
+    from click_aliases import ClickAliasedGroup
 except ImportError:
     print("Missing dependencies for the CLI. Please `pip install aoc_helper[cli]`")
     exit(1)
 
 from .data import DATA_DIR, DEFAULT_YEAR, PRACTICE_DATA_DIR, RANK
+from .interface import _estimate_practice_rank, _format_timedelta
 from .interface import fetch as fetch_input
 from .interface import submit as submit_answer
 
@@ -39,30 +43,34 @@ def parse_range(_, __, value: str) -> typing.List[int]:
     return sorted(days)
 
 
-@click.group()
+@click.group(cls=ClickAliasedGroup)
 def cli():
     pass
 
 
-@cli.command()
+@cli.command(aliases=["f", "get", "get-input", "download"])
 @click.argument("day", type=int)
 @click.option("--year", type=int, default=DEFAULT_YEAR)
 def fetch(day: int, year: int):
-    """Fetch and print the input for DAY of --year"""
+    """Fetch and print the input for day DAY of --year"""
     print(fetch_input(day, year))
 
 
-@cli.command()
+@cli.command(aliases=["s", "send"])
 @click.argument("day", type=int)
-@click.argument("part", type=int)
+@click.argument("part", type=click.Choice(["1", "2"]))
 @click.argument("answer")
 @click.option("--year", type=int, default=DEFAULT_YEAR)
-def submit(day: int, part: int, answer: str, year: int):
-    """Submit the answer for DAY part PART of --year"""
-    submit_answer(day, part, answer, year)
+@click.option("--practice", is_flag=True)
+def submit(
+    day: int, part: typing.Literal["1", "2"], answer: str, year: int, practice: bool
+):
+    """Submit the answer for day DAY part PART of --year"""
+    _ = practice  # used via sys.argv
+    submit_answer(day, int(part), answer, year)
 
 
-@cli.command()
+@cli.command(aliases=["t", "create"])
 @click.argument("days", callback=parse_range)
 @click.option("--year", type=int, default=DEFAULT_YEAR)
 def template(days: typing.List[int], year: int):
@@ -74,7 +82,7 @@ def template(days: typing.List[int], year: int):
         )
 
 
-@cli.command()
+@cli.command(aliases=["get-browser", "set-browser"])
 @click.argument("state", type=bool, default=None, required=False)
 def browser(state: typing.Optional[bool]):
     """Enable, disable, or check browser automation"""
@@ -89,7 +97,17 @@ def browser(state: typing.Optional[bool]):
         print("Disabled web browser automation")
 
 
-@cli.command()
+@cli.command(
+    aliases=[
+        "clear",
+        "purge",
+        "delete",
+        "clear-cache",
+        "clean-cache",
+        "purge-cache",
+        "delete-cache",
+    ]
+)
 @click.argument("days", callback=parse_range)
 @click.argument("year", type=int, default=DEFAULT_YEAR)
 @click.option(
@@ -131,3 +149,50 @@ def clean(days: typing.List[int], year: int, type: str):
             (DATA_DIR / f"{year}" / f"{day}" / "2.solution").unlink(True)
         if type in ("tests", "all"):
             (DATA_DIR / f"{year}" / f"{day}" / "tests.json").unlink(True)
+
+
+@cli.command(name="practice-results")
+@click.argument("day", type=int)
+@click.option("--year", type=int, default=DEFAULT_YEAR)
+def practice_results(day: int, year: int):
+    """Show all practice results for day DAY of --year"""
+    folder = PRACTICE_DATA_DIR / f"{year}" / f"{day}"
+    if not folder.exists():
+        print("No practice results found")
+        return
+
+    def format_result(result: typing.Optional[typing.Tuple[int, int, int]]):
+        if not result:
+            return "no rank"
+        estimated, best, worst = result
+        if best == worst:
+            return f"rank {best}"
+        if worst > 100:
+            worst = "100+"
+        return f"approximately rank {estimated} - {best} to {worst}"
+
+    for file in sorted(folder.iterdir()):
+        attempt_year, attempt_month, attempt_day = map(int, file.stem.split("-"))
+        attempt_date = date(attempt_year, attempt_month, attempt_day).strftime("%x")
+        results: typing.List[float] = json.loads(file.read_text())
+        if len(results) == 1:
+            solve_time = timedelta(seconds=results[0])
+            result = format_result(_estimate_practice_rank(day, 1, year, solve_time))
+            print(
+                f"{attempt_date} - Part 1: {_format_timedelta(solve_time)} ({result}),"
+                " Part 2: (unsolved)"
+            )
+        elif len(results) == 2:
+            solve_time_1 = timedelta(seconds=results[0])
+            solve_time_2 = timedelta(seconds=results[1])
+            result_1 = format_result(
+                _estimate_practice_rank(day, 1, year, solve_time_1)
+            )
+            result_2 = format_result(
+                _estimate_practice_rank(day, 2, year, solve_time_2)
+            )
+            print(
+                f"{attempt_date} - "
+                f"Part 1: {_format_timedelta(solve_time_1)} ({result_1}), "
+                f"Part 2: {_format_timedelta(solve_time_2)} ({result_2})"
+            )

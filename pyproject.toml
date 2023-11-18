@@ -29,9 +29,9 @@ file = "README.md"
 aoc = "aoc_helper.main:cli"
 
 [project.optional-dependencies]
-cli = ["click"]
+cli = ["click", "click-aliases"]
 fancy = ["rich"]
-full = ["click", "rich"]
+full = ["click", "click-aliases", "rich"]
 
 [tool.setuptools]
 include-package-data = false

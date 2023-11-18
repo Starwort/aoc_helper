@@ -1,8 +1,8 @@
-import sys
 import builtins
 import datetime
 import json
 import pathlib
+import sys
 import time
 import typing
 import webbrowser
@@ -260,38 +260,52 @@ def _calculate_practice_result(day: int, part: int, year: int) -> None:
     _report_practice_result(day, part, year, solve_time)
 
 
-def _report_practice_result(
+def _estimate_practice_rank(
     day: int, part: int, year: int, solve_time: datetime.timedelta
-) -> None:
-    minutes, seconds = divmod(solve_time.seconds, 60)
-    hours, minutes = divmod(minutes, 60)
-    if hours > 0:
-        solve_time_str = f"{hours:02}:{minutes:02}:{seconds:02}"
-    else:
-        solve_time_str = (
-            f"{minutes:02}:{seconds:02}.{solve_time.microseconds // 10_000:02}"
-        )
-    print(f"{GREEN}You solved the puzzle in {BLUE}{solve_time_str}{GREEN}!{RESET}")
+) -> typing.Optional[typing.Tuple[int, int, int]]:
     import bisect
 
     leaderboard = _load_leaderboard_times(day, year)[part - 1]
     best_possible_rank = bisect.bisect_left(leaderboard, solve_time) + 1
     worst_possible_rank = bisect.bisect_right(leaderboard, solve_time) + 1
     if best_possible_rank > 100:
-        print(f"{YELLOW}You would not have achieved a leaderboard position.{RESET}")
-    elif best_possible_rank == worst_possible_rank:
-        print(f"{GOLD}You would have achieved rank {best_possible_rank}!{RESET}")
+        return None
+    span = worst_possible_rank - best_possible_rank
+    approx_rank = best_possible_rank + round(span * solve_time.microseconds / 1_000_000)
+    return approx_rank, best_possible_rank, worst_possible_rank
+
+
+def _format_timedelta(solve_time: datetime.timedelta) -> str:
+    minutes, seconds = divmod(solve_time.seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    if hours > 0:
+        return f"{hours:02}:{minutes:02}:{seconds:02}"
     else:
-        span = worst_possible_rank - best_possible_rank
-        approx_rank = best_possible_rank + round(
-            span * solve_time.microseconds / 1_000_000
-        )
-        if worst_possible_rank > 100:
-            worst_possible_rank = "100+"
-        print(
-            f"{GOLD}You would have achieved approximately rank"
-            f" {approx_rank} ({best_possible_rank} to {worst_possible_rank})!{RESET}"
-        )
+        return f"{minutes:02}:{seconds:02}.{solve_time.microseconds // 10_000:02}"
+
+
+def _report_practice_result(
+    day: int, part: int, year: int, solve_time: datetime.timedelta
+) -> None:
+    print(
+        f"{GREEN}You solved the puzzle in"
+        f" {BLUE}{_format_timedelta(solve_time)}{GREEN}!{RESET}"
+    )
+    result = _estimate_practice_rank(day, part, year, solve_time)
+    if not result:
+        print(f"{YELLOW}You would not have achieved a leaderboard position.{RESET}")
+    else:
+        likely_rank, best_possible_rank, worst_possible_rank = result
+        if best_possible_rank == worst_possible_rank:
+            print(f"{GOLD}You would have achieved rank {best_possible_rank}!{RESET}")
+        else:
+            if worst_possible_rank > 100:
+                worst_possible_rank = "100+"
+            print(
+                f"{GOLD}You would have achieved approximately rank"
+                f" {likely_rank} ({best_possible_rank} to"
+                f" {worst_possible_rank})!{RESET}"
+            )
 
 
 def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) -> None:
