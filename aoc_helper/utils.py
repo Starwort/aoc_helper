@@ -152,7 +152,7 @@ class list(UserList, typing.Generic[T]):
         """Return a list containing the results of mapping each element of self
         with func. The function is called on each element immediately.
         """
-        return self.mapped(lambda i: list(i).mapped(func))
+        return self.mapped(lambda i: list(map(func, i)))
 
     def filtered(
         self, pred: typing.Union[typing.Callable[[T], bool], T, None] = None
