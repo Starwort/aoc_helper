@@ -1554,7 +1554,7 @@ class SparseGrid(typing.Generic[T]):
         for start, end in _lines.windowed(2):
             self.draw_line(start, end, value)
 
-    def bounds(self, empty: builtins.list[T]) -> typing.Tuple[int, int, int, int]:
+    def bounds(self, empty: typing.List[T]) -> typing.Tuple[int, int, int, int]:
         """Return the bounds of a sparse grid, as a tuple of (min_x, min_y, max_x, max_y)."""
         if len(self) == 0:
             return 0, 0, 0, 0
@@ -1567,7 +1567,7 @@ class SparseGrid(typing.Generic[T]):
             )
 
     def pretty_print(
-        self, to_char: typing.Callable[[T], str], empty: builtins.list[T]
+        self, to_char: typing.Callable[[T], str], empty: typing.List[T]
     ) -> None:
         """Print a sparse grid to the console."""
         min_x, min_y, max_x, max_y = self.bounds(empty)
@@ -1650,9 +1650,9 @@ dijkstras = pathfind
 
 
 class PrioQueue(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
-    _data: builtins.list[T]
+    _data: typing.List[T]
 
-    def __init__(self, data: builtins.list[T]) -> None:
+    def __init__(self, data: typing.List[T]) -> None:
         self._data = data
         heapify(self._data)
 
