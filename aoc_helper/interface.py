@@ -252,7 +252,7 @@ def _calculate_practice_result(day: int, part: int, year: int) -> None:
     try:
         with open(practice_data_dir / filename) as f:
             data: typing.List[float] = json.load(f)
-    except json.decoder.JSONDecodeError:
+    except (json.decoder.JSONDecodeError, FileNotFoundError):
         data = []
     with open(practice_data_dir / filename, "w") as f:
         data.append(solve_time.total_seconds())
@@ -267,7 +267,7 @@ def _estimate_practice_rank(
 
     leaderboard = _load_leaderboard_times(day, year)[part - 1]
     # aoc truncates solve times, so we do too for the purpose of sorting
-    truncated_solve_time = datetime.timedelta(seconds = int(solve_time.total_seconds()))
+    truncated_solve_time = datetime.timedelta(seconds=int(solve_time.total_seconds()))
     best_possible_rank = bisect.bisect_left(leaderboard, truncated_solve_time) + 1
     worst_possible_rank = bisect.bisect_right(leaderboard, truncated_solve_time) + 1
     if best_possible_rank > 100:
