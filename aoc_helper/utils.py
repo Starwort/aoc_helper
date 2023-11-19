@@ -146,7 +146,7 @@ class list(UserList, typing.Generic[T]):
         return list(map(func, self))
 
     def mapped_each(
-        self: "list[Iterable[SpecialisationT]] | list[list[SpecialisationT]]",
+        self: "list[Iterable[SpecialisationT] | list[SpecialisationT] | typing.List[SpecialisationT]]",
         func: typing.Callable[[SpecialisationT], U],
     ) -> "list[list[U]]":
         """Return a list containing the results of mapping each element of self
