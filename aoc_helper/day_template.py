@@ -1,4 +1,5 @@
 from collections import defaultdict, deque
+from typing import TYPE_CHECKING
 
 import aoc_helper
 from aoc_helper import (
@@ -11,7 +12,6 @@ from aoc_helper import (
     extract_ranges,
     extract_uints,
     frange,
-    infer_solution_types,
     irange,
     iter,
     list,
@@ -31,16 +31,20 @@ def parse_raw(raw: str):
 data = parse_raw(raw)
 
 
-@infer_solution_types(parse_raw)
-def part_one(data):
+# providing this default is somewhat of a hack - there isn't any other way to
+# force type inference to happen, AFAIK - but this won't work with standard
+# collections (list, set, dict, tuple)
+def part_one(data=data):
     ...
 
 
 aoc_helper.lazy_test(day={day}, year={year}, parse=parse_raw, solution=part_one)
 
 
-@infer_solution_types(parse_raw)
-def part_two(data):
+# providing this default is somewhat of a hack - there isn't any other way to
+# force type inference to happen, AFAIK - but this won't work with standard
+# collections (list, set, dict, tuple)
+def part_two(data=data):
     ...
 
 
