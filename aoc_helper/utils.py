@@ -1415,8 +1415,8 @@ class Grid(typing.Generic[T]):
 
     def pathfind(
         self: "Grid[AddableT]",
-        start=None,
-        end=None,
+        start: typing.Tuple[int, int] = (0, 0),
+        end: typing.Optional[typing.Tuple[int, int]] = None,
         valid_traversal: typing.Callable[
             [AddableT, AddableT], bool
         ] = lambda i, j: True,
@@ -1425,8 +1425,9 @@ class Grid(typing.Generic[T]):
         ),
         neighbour_type: typing.Literal["ortho", "full"] = "ortho",
         initial_cost: AddableT = 0,
+        heuristic_multiplier: float = 1,
     ) -> typing.Optional[AddableT]:
-        """Use Dijkstra's algorithm to find the best path from start to end, and
+        """Use the A* algorithm to find the best path from start to end, and
         return the total cost.
 
         start defaults to the top left, and end defaults to the bottom right.
@@ -1439,10 +1440,35 @@ class Grid(typing.Generic[T]):
         of a traversal, and returns the cost of that traversal. The default is
         that the cost is the difference between the two values.
 
+        neighbour_type is either "ortho" or "full", and determines whether
+        diagonal traversals are considered. The default is "ortho", meaning no
+        diagonal traversals will be considered in the solution.
+
         initial_cost is the zero-value of the cell type. You should only need to
         modify this if you're using a non-numeric type.
+
+        heuristic_multiplier is a multiplier applied to the heuristic function.
+        The heuristic function will be either Manhattan distance from the
+        current state to the goal (in "ortho" mode) or Euclidean distance from
+        the current state to the goal (in "full" mode). The default is 1, which
+        means that the heuristic function will be used as-is. A value of 0 will
+        devolve the search to Dijkstra's algorithm, and a value higher than 1
+        may improve search time, potentially at the cost of accuracy.
         """
-        to_visit = PrioQueue([(typing.cast(AddableT, initial_cost), start or (0, 0))])
+        if neighbour_type not in ("ortho", "full"):
+            raise ValueError(
+                f"neighbour_type must be one of 'ortho' or 'full', not {neighbour_type}"
+            )
+        # DEPRECATED: start should never be None, but as it was previously accepted,
+        # I'll leave this in for now
+        if start is None:
+            from warnings import warn
+
+            warn(
+                "`start` argument to pathfind() should not be None", DeprecationWarning
+            )
+            start = 0, 0
+        to_visit = PrioQueue([(initial_cost, initial_cost, start)])
         visited = set()
         if end is None:
             target = len(self.data[0]) - 1, len(self.data) - 1
@@ -1452,17 +1478,33 @@ class Grid(typing.Generic[T]):
         neighbours = (
             self.orthogonal_neighbours if neighbour_type == "ortho" else self.neighbours
         )
+        heuristic: typing.Callable[[int, int], float] = (
+            (
+                (lambda x, y: abs(x - target[0]) + abs(y - target[1]))
+                if neighbour_type == "ortho"
+                else (
+                    lambda x, y: math.sqrt((x - target[0]) ** 2 + (y - target[1]) ** 2)
+                )
+            )
+            if heuristic_multiplier != 0
+            else (lambda x, y: 0)
+        )  # don't bother with expensive sqrt if we're not using it
 
-        for cost, (x, y) in to_visit:
-            if (x, y) in visited:
-                continue
+        for _heuristic_cost, cost, (x, y) in to_visit:
             if (x, y) == target:
                 return cost
+            if (x, y) in visited:
+                continue
             visited.add((x, y))
             for neighbour, value in neighbours(x, y):
                 if valid_traversal(self.data[y][x], value):
+                    next_cost = cost + cost_function(self.data[y][x], value)
                     to_visit.push(
-                        (cost + cost_function(self.data[y][x], value), neighbour)
+                        (
+                            next_cost + heuristic(*value) * heuristic_multiplier,
+                            next_cost,
+                            neighbour,
+                        )
                     )
 
     dijkstras = pathfind
@@ -1632,18 +1674,35 @@ def narrow_list(list: list, type: typing.Type[T]) -> typing.TypeGuard[list[T]]:
 
 def pathfind(
     grid: typing.List[typing.List[int]],
-    start: typing.Optional[typing.Tuple[int, int]] = None,
+    start: typing.Tuple[int, int] = (0, 0),
     end: typing.Optional[typing.Tuple[int, int]] = None,
-) -> typing.Optional[int]:
-    """Use Dijkstra's algorithm to find the best path from start to end, and
+) -> int:
+    """Use the A* algorithm to find the best path from start to end, and
     return the total cost.
 
     start defaults to the top left, and end defaults to the bottom right.
+
+    grid is assumed to be a rectangular 2D array of integers, *not* a ragged
+    array. Bad things will happen if you pass a ragged array.
     """
-    # something to do with variance, but to be honest I don't really
-    # understand the error. The code works, but a type-fixing PR is
-    # welcome.
-    return Grid(list(grid).mapped(list)).pathfind(start, end)  # type: ignore
+    max_x = len(grid[-1]) - 1
+    max_y = len(grid) - 1
+    if end is None:
+        end = max_x, max_y
+    return search(
+        start,
+        lambda state: state == end,
+        lambda state: filter(
+            None,
+            [
+                (state[0] - 1, state[1]) if state[0] > 0 else None,
+                (state[0] + 1, state[1]) if state[0] < max_x else None,
+                (state[0], state[1] - 1) if state[1] > 0 else None,
+                (state[0], state[1] + 1) if state[1] < max_y else None,
+            ],
+        ),
+        heuristic=lambda state: abs(state[0] - end[0]) + abs(state[1] - end[1]),
+    )[0]
 
 
 dijkstras = pathfind
@@ -1754,9 +1813,9 @@ def infer_solution_types(
 ]:
     """Decorator to force your type-checker to infer the parameter type of your
     solution. Actually an identity function.
-    
+
     Only guaranteed to work with pyright, but may work with mypy (if the return
     type of parse_raw is annotated)
     """
-    _ = parse_raw # parse_raw is needed in order to infer the `T` type
+    _ = parse_raw  # parse_raw is needed in order to infer the `T` type
     return lambda f: f
