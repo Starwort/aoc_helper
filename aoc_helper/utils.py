@@ -574,21 +574,24 @@ class list(UserList, typing.Generic[T]):
         return f"list({super().__repr__()})"
 
 
-class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
+T_Co = typing.TypeVar("T_Co", covariant=True)
+
+
+class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
     """Smart/fluent iterator class"""
 
     _SENTINEL = object()
 
-    def __init__(self, it: Iterable[T]) -> None:
+    def __init__(self, it: Iterable[T_Co]) -> None:
         self.it = builtins.iter(it)
 
-    def __iter__(self) -> typing.Iterator[T]:
+    def __iter__(self) -> typing.Iterator[T_Co]:
         return self.it.__iter__()
 
-    def __next__(self) -> T:
+    def __next__(self) -> T_Co:
         return next(self.it)
 
-    def map(self, func: typing.Callable[[T], U]) -> "iter[U]":
+    def map(self, func: typing.Callable[[T_Co], U]) -> "iter[U]":
         """Return an iterator containing the result of calling func on each
         element in this iterator.
         """
@@ -604,12 +607,12 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         return iter(self.map(lambda i: iter(i).map(func)))
 
     def filter(
-        self, pred: typing.Union[typing.Callable[[T], bool], T] = bool
-    ) -> "iter[T]":
+        self, pred: typing.Union[typing.Callable[[T_Co], bool], T_Co] = bool
+    ) -> "iter[T_Co]":
         """Return an iterator containing only the elements for which pred
         returns True.
 
-        If pred is a T (and T is not callable), return an iterator
+        If pred is a T_Co (and T_Co is not callable), return an iterator
         containing only elements that compare equal to pred.
         """
         if not callable(pred) and pred is not None:
@@ -617,13 +620,13 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         return iter(filter(pred, self))
 
     def find(
-        self, pred: typing.Union[typing.Callable[[T], bool], T, None] = None
-    ) -> typing.Optional[T]:
+        self, pred: typing.Union[typing.Callable[[T_Co], bool], T_Co, None] = None
+    ) -> typing.Optional[T_Co]:
         """Return the first element of self for which pred returns True.
 
         If pred is None, return the first element which is truthy.
 
-        If pred is a T (and T is not a callable or None), return the first element
+        If pred is a T_Co (and T_Co is not a callable or None), return the first element
         that compares equal to pred.
 
         If no such element exists, return None.
@@ -636,7 +639,9 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             if pred(i):
                 return i
 
-    def any(self, pred: typing.Union[typing.Callable[[T], bool], T] = bool) -> bool:
+    def any(
+        self, pred: typing.Union[typing.Callable[[T_Co], bool], T_Co] = bool
+    ) -> bool:
         """Consume this iterator and return True if any element satisfies the
         given predicate. The default predicate is bool; therefore by default this
         method returns True if any element is truthy.
@@ -645,7 +650,9 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             pred = (lambda j: lambda i: i == j)(pred)
         return any(pred(item) for item in self)
 
-    def all(self, pred: typing.Union[typing.Callable[[T], bool], T] = bool) -> bool:
+    def all(
+        self, pred: typing.Union[typing.Callable[[T_Co], bool], T_Co] = bool
+    ) -> bool:
         """Consume this iterator and return True if all elements satisfy the
         given predicate. The default predicate is bool; therefore by default this
         method returns True if all elements are truthy.
@@ -654,7 +661,9 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             pred = (lambda j: lambda i: i == j)(pred)
         return all(pred(item) for item in self)
 
-    def none(self, pred: typing.Union[typing.Callable[[T], bool], T] = bool) -> bool:
+    def none(
+        self, pred: typing.Union[typing.Callable[[T_Co], bool], T_Co] = bool
+    ) -> bool:
         """Consume this iterator and return True if no element satisfies the
         given predicate. The default predicate is bool; therefore by default this
         method returns True if no element is truthy.
@@ -664,11 +673,11 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         return not any(pred(item) for item in self)
 
     @typing.overload
-    def reduce(self, func: typing.Callable[[T, T], T]) -> T:
+    def reduce(self, func: typing.Callable[[T_Co, T_Co], T_Co]) -> T_Co:
         ...
 
     @typing.overload
-    def reduce(self, func: typing.Callable[[U, T], U], initial: U) -> U:
+    def reduce(self, func: typing.Callable[[U, T_Co], U], initial: U) -> U:
         ...
 
     def reduce(self, func, initial=_SENTINEL):
@@ -680,19 +689,23 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         return functools.reduce(func, self, initial)
 
     @typing.overload
-    def accumulate(self) -> "iter[T]":
+    def accumulate(self) -> "iter[T_Co]":
         ...
 
     @typing.overload
-    def accumulate(self, func: typing.Callable[[T, T], T]) -> "iter[T]":
+    def accumulate(self, func: typing.Callable[[T_Co, T_Co], T_Co]) -> "iter[T_Co]":
         ...
 
     @typing.overload
-    def accumulate(self, func: typing.Callable[[T, T], T], initial: T) -> "iter[T]":
+    def accumulate(
+        self,
+        func: typing.Callable[[T_Co, T_Co], T_Co],
+        initial: T,  # type: ignore
+    ) -> "iter[T_Co]":
         ...
 
     @typing.overload
-    def accumulate(self, func: typing.Callable[[U, T], U], initial: U) -> "iter[U]":
+    def accumulate(self, func: typing.Callable[[U, T_Co], U], initial: U) -> "iter[U]":
         ...
 
     def accumulate(self, func=operator.add, initial=_SENTINEL):
@@ -705,19 +718,19 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             return iter(itertools.accumulate(self, func))
         return iter(itertools.accumulate(self, func, initial))  # type: ignore
 
-    def foreach(self, func: typing.Callable[[T], typing.Any]) -> None:
+    def foreach(self, func: typing.Callable[[T_Co], typing.Any]) -> None:
         """Run func on every value in this iterator, immediately."""
         for el in self:
             func(el)
 
-    def chunk(self, n: int) -> "iter[typing.Tuple[T, ...]]":
+    def chunk(self, n: int) -> "iter[typing.Tuple[T_Co, ...]]":
         """Return an iterator containing the elements of this iterator in chunks
         of size n. If there are not enough elements to fill the last chunk, it
         will be dropped.
         """
         return iter(chunk(self, n))
 
-    def chunk_default(self, n: int, default: T) -> "iter[typing.Tuple[T, ...]]":
+    def chunk_default(self, n: int, default: T_Co) -> "iter[typing.Tuple[T_Co, ...]]":  # type: ignore
         """Return an iterator containing the elements of this iterator in chunks
         of size n. If there are not enough elements to fill the last chunk, the
         missing elements will be replaced with the default value.
@@ -726,8 +739,8 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
     def _window(
         self, window_size: int
-    ) -> typing.Generator[typing.Tuple[T, ...], None, None]:
-        elements: typing.Deque[T] = deque()
+    ) -> typing.Generator[typing.Tuple[T_Co, ...], None, None]:
+        elements: typing.Deque[T_Co] = deque()
         for _ in range(window_size):
             try:
                 elements.append(self.next())
@@ -741,30 +754,30 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             elements.append(el)
             yield tuple(elements)
 
-    def window(self, window_size: int) -> "iter[typing.Tuple[T, ...]]":
+    def window(self, window_size: int) -> "iter[typing.Tuple[T_Co, ...]]":
         """Return an iterator containing the elements of this iterator in
         a sliding window of size window_size. If there are not enough elements
         to create a full window, the iterator will be empty.
         """
         return iter(self._window(window_size))
 
-    def shifted_zip(self, shift: int = 1) -> "iter[typing.Tuple[T, ...]]":
+    def shifted_zip(self, shift: int = 1) -> "iter[typing.Tuple[T_Co, ...]]":
         """Return an iterator containing pairs of elements separated by shift.
 
         If there are fewer than shift elements, the iterator will be empty.
         """
         return self.window(shift + 1).map(lambda x: (x[0], x[-1]))
 
-    def next(self) -> T:
+    def next(self) -> T_Co:
         """Return the next element in the iterator, or raise StopIteration."""
         return next(self.it)
 
     @typing.overload
-    def next_or(self, default: T) -> T:
+    def next_or(self, default: T_Co) -> T_Co:  # type: ignore
         ...
 
     @typing.overload
-    def next_or(self, default: U) -> typing.Union[T, U]:
+    def next_or(self, default: U) -> typing.Union[T_Co, U]:
         ...
 
     def next_or(self, default):
@@ -774,7 +787,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         except StopIteration:
             return default
 
-    def skip(self, n: int = 1) -> "iter[T]":
+    def skip(self, n: int = 1) -> "iter[T_Co]":
         """Skip and discard n elements from this iterator.
 
         Raises StopIteration if there are not enough elements.
@@ -783,7 +796,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             self.next()
         return self
 
-    def nth(self, n: int) -> T:
+    def nth(self, n: int) -> T_Co:
         """Return the nth element of this iterator.
 
         Discards all elements up to the nth element, and raises StopIteration
@@ -792,7 +805,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         self.skip(n)
         return self.next()
 
-    def take(self, n: int) -> typing.Tuple[T, ...]:
+    def take(self, n: int) -> typing.Tuple[T_Co, ...]:
         """Return the next n elements of this iterator.
 
         Raises StopIteration if there are not enough elements.
@@ -800,11 +813,11 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         return tuple(self.next() for _ in builtins.range(n))
 
     @typing.overload
-    def collect(self) -> list[T]:
+    def collect(self) -> list[T_Co]:
         ...
 
     @typing.overload  # TODO: why doesn't this work?
-    def collect(self, collection_type: typing.Type[U]) -> "U[T]":  # type: ignore
+    def collect(self, collection_type: typing.Type[U]) -> "U[T_Co]":  # type: ignore
         ...
 
     def collect(self, collection_type=None):
@@ -813,7 +826,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             collection_type = list
         return collection_type(self)
 
-    def chain(self, other: Iterable[T]) -> "iter[T]":
+    def chain(self, other: Iterable[T_Co]) -> "iter[T_Co]":
         """Return an iterator containing the elements of this iterator followed
         by the elements of other.
         """
@@ -848,7 +861,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
     @typing.overload
     def prod(
         self: "iter[SupportsProdNoDefaultT]",
-    ) -> typing.Union[T, typing.Literal[1]]:
+    ) -> typing.Union[T_Co, typing.Literal[1]]:
         ...
 
     @typing.overload
@@ -882,9 +895,9 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
     @typing.overload
     def sorted(
         self,
-        key: typing.Callable[[T], SupportsRichComparison],
+        key: typing.Callable[[T_Co], SupportsRichComparison],
         reverse: bool = False,
-    ) -> "list[T]":
+    ) -> "list[T_Co]":
         ...
 
     def sorted(self, key=None, reverse=False):
@@ -896,7 +909,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             self = list(self)
         return list(sorted(self, key=key, reverse=reverse))
 
-    def reversed(self) -> "iter[T]":
+    def reversed(self) -> "iter[T_Co]":
         """Return an iterator containing the elements of this iterator in
         reverse order.
         """
@@ -905,17 +918,17 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
     @typing.overload
     def min(
         self: "iter[SupportsRichComparisonT]",
-    ) -> T:
+    ) -> T_Co:
         ...
 
     @typing.overload
     def min(
         self,
-        key: typing.Callable[[T], SupportsRichComparisonT],
-    ) -> T:
+        key: typing.Callable[[T_Co], SupportsRichComparisonT],
+    ) -> T_Co:
         ...
 
-    def min(self, key=None) -> T:
+    def min(self, key=None) -> T_Co:
         """Return the minimum element of this iterator, according to the given
         key.
         """
@@ -924,23 +937,23 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
     @typing.overload
     def max(
         self: "iter[SupportsRichComparisonT]",
-    ) -> T:
+    ) -> T_Co:
         ...
 
     @typing.overload
     def max(
         self,
-        key: typing.Callable[[T], SupportsRichComparisonT],
-    ) -> T:
+        key: typing.Callable[[T_Co], SupportsRichComparisonT],
+    ) -> T_Co:
         ...
 
-    def max(self, key=None) -> T:
+    def max(self, key=None) -> T_Co:
         """Return the maximum element of this iterator, according to the given
         key.
         """
         return max(self, key=key)  # type: ignore
 
-    def tee(self, n: int = 2) -> typing.Tuple["iter[T]", ...]:
+    def tee(self, n: int = 2) -> typing.Tuple["iter[T_Co]", ...]:
         """Return a tuple of n iterators containing the elements of this
         iterator.
         """
@@ -949,7 +962,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
     def permutations(
         self, r: typing.Union[int, None] = None
-    ) -> "iter[typing.Tuple[T, ...]]":
+    ) -> "iter[typing.Tuple[T_Co, ...]]":
         """Return an iterator over the permutations of the elements of this
         iterator.
 
@@ -958,13 +971,13 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         """
         return iter(itertools.permutations(self, r))
 
-    def combinations(self, r: int) -> "iter[typing.Tuple[T, ...]]":
+    def combinations(self, r: int) -> "iter[typing.Tuple[T_Co, ...]]":
         """Return an iterator over the combinations, without replacement, of
         length r of the elements of this iterator.
         """
         return iter(itertools.combinations(self, r))
 
-    def combinations_with_replacement(self, r: int) -> "iter[typing.Tuple[T, ...]]":
+    def combinations_with_replacement(self, r: int) -> "iter[typing.Tuple[T_Co, ...]]":
         """Return an iterator over the combinations, with replacement, of
         length r of the elements of this iterator.
         """
@@ -1013,7 +1026,7 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
             )
         )
 
-    def enumerate(self, start: int = 0) -> "iter[typing.Tuple[int, T]]":
+    def enumerate(self, start: int = 0) -> "iter[typing.Tuple[int, T_Co]]":
         """Return an iterator over the elements of this iterator, paired with
         their index, starting at start.
         """
@@ -1023,11 +1036,11 @@ class iter(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
         """Consume this iterator and return the number of elements it contained."""
         return self.map(lambda _: 1).sum()
 
-    def nlargest(self, n: int) -> list[T]:
+    def nlargest(self, n: int) -> list[T_Co]:
         """Consume this iterator and return the n largest elements."""
         return list(nlargest(n, self))
 
-    def nsmallest(self, n: int) -> list[T]:
+    def nsmallest(self, n: int) -> list[T_Co]:
         """Consume this iterator and return the n smallest elements."""
         return list(nsmallest(n, self))
 
@@ -1370,15 +1383,13 @@ class Grid(typing.Generic[T]):
         ...........
         """
         return (
-            irange(max(y - 1, 0), min(y + 1, len(self.data) - 1)).map(
+            irange(max(y - 1, 0), min(y + 1, len(self.data) - 1))
+            .map(
                 lambda y_: irange(max(x - 1, 0), min(x + 1, len(self.data[0]) - 1))
                 .filter(lambda x_: (x, y) != (x_, y_))
                 .map(lambda x: ((x, y_), self.data[y_][x]))
             )
-            # something to do with variance, but to be honest I don't really
-            # understand the error. The code works, but a type-fixing PR is
-            # welcome.
-            .flatten(False)  # type: ignore
+            .flatten(False)
         ).collect()
 
     def orthogonal_neighbours(
