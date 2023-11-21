@@ -1,3 +1,5 @@
+from collections import defaultdict, deque
+
 import aoc_helper
 from aoc_helper import (
     Grid,
@@ -9,24 +11,27 @@ from aoc_helper import (
     extract_ranges,
     extract_uints,
     frange,
+    infer_solution_types,
     irange,
     iter,
     list,
     map,
     range,
+    search,
     tail_call,
 )
 
 raw = aoc_helper.fetch({day}, {year})
 
 
-def parse_raw(raw):
-    ...
+def parse_raw(raw: str):
+    return ...
 
 
 data = parse_raw(raw)
 
 
+@infer_solution_types(parse_raw)
 def part_one(data):
     ...
 
@@ -34,6 +39,7 @@ def part_one(data):
 aoc_helper.lazy_test(day={day}, year={year}, parse=parse_raw, solution=part_one)
 
 
+@infer_solution_types(parse_raw)
 def part_two(data):
     ...
 
