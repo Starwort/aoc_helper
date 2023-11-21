@@ -1745,3 +1745,18 @@ def chinese_remainder_theorem(
         )
         % N
     )
+
+
+def infer_solution_types(
+    parse_raw: typing.Callable[[str], T],
+) -> typing.Callable[
+    [typing.Callable[[T], typing.Any]], typing.Callable[[T], typing.Any]
+]:
+    """Decorator to force your type-checker to infer the parameter type of your
+    solution. Actually an identity function.
+    
+    Only guaranteed to work with pyright, but may work with mypy (if the return
+    type of parse_raw is annotated)
+    """
+    _ = parse_raw # parse_raw is needed in order to infer the `T` type
+    return lambda f: f
