@@ -116,6 +116,16 @@ def fetch(day: int = TODAY, year: int = DEFAULT_YEAR, never_print: bool = False)
     input_path = DATA_DIR / year_ / (day_ + ".in")
 
     if input_path.exists():
+        if "--practice" in sys.argv:
+            now = datetime.datetime.utcnow()
+            unlock = datetime.datetime(now.year, now.month, now.day, 5)
+            if now < unlock:
+                wait(
+                    f"{YELLOW}Waiting for puzzle unlock...{RESET}",
+                    (unlock - now).total_seconds(),
+                )
+                print(GREEN + "Fetching input!" + RESET)
+                _open_page(URL.format(day=day, year=year))
         return input_path.read_text()
     else:
         unlock = datetime.datetime(year, 12, day, 5)
