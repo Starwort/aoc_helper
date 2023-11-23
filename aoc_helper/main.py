@@ -156,6 +156,11 @@ def clean(days: typing.List[int], year: int, type: str):
 @click.option("--year", type=int, default=DEFAULT_YEAR)
 def practice_results(day: int, year: int):
     """Show all practice results for day DAY of --year"""
+    import locale
+
+    locale.setlocale(
+        locale.LC_TIME, ""
+    )  # https://github.com/python/cpython/issues/73643
     folder = PRACTICE_DATA_DIR / f"{year}" / f"{day}"
     if not folder.exists():
         print("No practice results found")
