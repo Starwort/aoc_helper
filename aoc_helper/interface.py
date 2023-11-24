@@ -480,6 +480,8 @@ def lazy_submit(
         # Don't try to submit part 2 if part 1 isn't solved
         if (submission_dir / "1.solution").exists():
             submit_25(str(year))
+        else:
+            return
     solution_file = submission_dir / f"{part}.solution"
     # Check if solved
     if (
