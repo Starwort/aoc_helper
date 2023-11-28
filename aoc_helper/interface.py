@@ -457,6 +457,8 @@ def submit_25(year: str):
     article = Soup(resp.text, "html.parser").article
     assert article is not None
     print(article.text.strip())
+    if len(_practice_result_for(25, int(year))) < 2:
+        _calculate_practice_result(25, 2, int(year))
 
 
 def lazy_submit(
