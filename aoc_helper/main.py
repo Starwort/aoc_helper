@@ -12,7 +12,15 @@ except ImportError:
     print("Missing dependencies for the CLI. Please `pip install aoc_helper[cli]`")
     exit(1)
 
-from .data import DATA_DIR, DEFAULT_YEAR, PRACTICE_DATA_DIR, RANK
+from .data import (
+    DATA_DIR,
+    DEFAULT_YEAR,
+    HEADERS,
+    PRACTICE_DATA_DIR,
+    RANK,
+    URL,
+    get_cookie,
+)
 from .interface import _estimate_practice_rank, _format_timedelta
 from .interface import fetch as fetch_input
 from .interface import submit as submit_answer
@@ -54,6 +62,88 @@ def cli():
 def fetch(day: int, year: int):
     """Fetch and print the input for day DAY of --year"""
     print(fetch_input(day, year))
+
+
+@cli.command(aliases=["read-puzzle", "puzzle"])
+@click.argument("day", type=int)
+@click.option("--year", type=int, default=DEFAULT_YEAR)
+@click.option(
+    "-c",
+    "--colour",
+    "--color",
+    type=click.Choice(["auto", "always", "never"]),
+    default="auto",
+)
+def read(day: int, year: int, colour: typing.Literal["auto", "always", "never"]):
+    """Read the puzzle for day DAY or --year in your terminal"""
+    import sys
+    from os import getenv
+
+    import requests
+    from bs4 import BeautifulSoup, Tag
+
+    try:
+        from rich.console import Console
+        from rich.panel import Panel
+    except ImportError:
+        print(
+            "Missing dependency rich. Please `pip install rich`,"
+            " `pip install aoc_helper[full]` or `pip install aoc_helper[fancy]`",
+            file=sys.stderr,
+        )
+        return
+    puzzle_info = requests.get(
+        URL.format(year=year, day=day), headers=HEADERS, cookies=get_cookie()
+    )
+    soup = BeautifulSoup(puzzle_info.text, "html.parser")
+    puzzle: Tag = soup.find("main")  # type: ignore
+    terminal = Console()
+    if colour == "auto":
+        pager = getenv("PAGER") or ""
+        colour = (
+            "always"
+            if terminal.is_terminal
+            and any(
+                flag in pager
+                for flag in ("-r", "-R", "--raw-control-chars", "--RAW-CONTROL-CHARS")
+            )
+            else "never"
+        )
+    with terminal.pager(styles=colour == "always") as pager:
+        first = True
+        for el in puzzle.children:
+            if not isinstance(el, Tag):
+                continue
+            if el.name == "article":
+                for part_el in el.children:
+                    if not isinstance(part_el, Tag):
+                        continue
+                    if not first:
+                        terminal.print()
+                    first = False
+                    if part_el.name == "h2":
+                        terminal.rule(
+                            "[bold gold1 underline]" + part_el.text.strip("- "),
+                            style="bold gold1",
+                        )
+                    elif part_el.name == "p":
+                        emphasises = part_el.find_all("em")
+                        for emphasis in emphasises:
+                            emphasis.string.replace_with(
+                                f"[bold gold1]{emphasis.text}[/]"
+                            )
+                        terminal.print(part_el.text)
+                    elif part_el.name == "pre":
+                        terminal.print(Panel(part_el.text.strip("\n"), expand=False))
+            elif el.name == "p":
+                if el.text.startswith("Your puzzle answer was"):
+                    terminal.print()
+                    terminal.print()
+                    terminal.print(el.text)
+                    terminal.print()
+                elif el.text.startswith("Both parts of this puzzle are complete!"):
+                    terminal.print(f"[bold gold1]{el.text}[/]")
+                    return
 
 
 @cli.command(aliases=["s", "send"])
