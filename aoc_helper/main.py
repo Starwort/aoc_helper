@@ -83,8 +83,10 @@ def read(day: int, year: int, colour: typing.Literal["auto", "always", "never"])
     from bs4 import BeautifulSoup, Tag
 
     try:
-        from rich.console import Console
+        from rich.console import Console, ConsoleOptions, RenderResult
+        from rich.markdown import TextElement
         from rich.panel import Panel
+        from rich.segment import Segment
     except ImportError:
         print(
             "Missing dependency rich. Please `pip install rich`,"
@@ -97,6 +99,8 @@ def read(day: int, year: int, colour: typing.Literal["auto", "always", "never"])
     )
     soup = BeautifulSoup(puzzle_info.text, "html.parser")
     puzzle: Tag = soup.find("main")  # type: ignore
+    for emphasis in puzzle.find_all("em"):
+        emphasis.string.replace_with(f"[bold gold1]{emphasis.text}[/]")
     terminal = Console()
     if colour == "auto":
         pager = getenv("PAGER") or ""
@@ -109,6 +113,60 @@ def read(day: int, year: int, colour: typing.Literal["auto", "always", "never"])
             )
             else "never"
         )
+
+    class CodeBlock(TextElement):
+        def __init__(self, text: str):
+            self.text = text
+
+        def __rich_console__(
+            self, console: Console, options: ConsoleOptions
+        ) -> RenderResult:
+            lines = self.text.split("\n")
+            line_count = len(lines)
+            width = len(str(line_count))
+            render_options = options.update(width=console.width - 7 - width)
+            for line_no, line in enumerate(lines, 1):
+                inner_lines = console.render_lines(line, render_options)
+                for i, line in enumerate(inner_lines):
+                    yield Segment("    ")
+                    yield Segment(
+                        f"{line_no:>{width}} │ " if i == 0 else " " * (width) + " │ "
+                    )
+                    yield from line
+                    yield Segment("\n")
+
+    class BulletItem(TextElement):
+        def __init__(self, text: str):
+            self.text = text
+
+        def __rich_console__(
+            self, console: Console, options: ConsoleOptions
+        ) -> RenderResult:
+            render_options = options.update(width=console.width - 2)
+            lines = console.render_lines(self.text, render_options)
+            for i, line in enumerate(lines):
+                yield Segment("- " if i == 0 else "  ")
+                yield from line
+                yield Segment("\n")
+
+    class NumberedItem(TextElement):
+        def __init__(self, text: str, number: int, width: int):
+            self.text = text
+            self.number = number
+            self.width = width
+
+        def __rich_console__(
+            self, console: Console, options: ConsoleOptions
+        ) -> RenderResult:
+            render_options = options.update(width=console.width - self.width - 2)
+            lines = console.render_lines(self.text, render_options)
+            for i, line in enumerate(lines):
+                yield f"{self.number:>{self.width}}. " if i == 0 else (
+                    " " * self.width + "  "
+                )
+                yield from line
+                yield "\n"
+
     with terminal.pager(styles=colour == "always") as pager:
         first = True
         for el in puzzle.children:
@@ -127,14 +185,18 @@ def read(day: int, year: int, colour: typing.Literal["auto", "always", "never"])
                             style="bold gold1",
                         )
                     elif part_el.name == "p":
-                        emphasises = part_el.find_all("em")
-                        for emphasis in emphasises:
-                            emphasis.string.replace_with(
-                                f"[bold gold1]{emphasis.text}[/]"
-                            )
                         terminal.print(part_el.text)
                     elif part_el.name == "pre":
-                        terminal.print(Panel(part_el.text.strip("\n"), expand=False))
+                        terminal.print(CodeBlock(part_el.text.strip("\n")))
+                    elif part_el.name == "ul":
+                        for li in part_el.find_all("li"):
+                            terminal.print(BulletItem(li.text))
+                    elif part_el.name == "ol":
+                        lis = list(part_el.find_all("li"))
+                        width = len(str(len(lis)))
+                        for i, li in enumerate(lis, 1):
+                            terminal.print(NumberedItem(li.text, i, width))
+
             elif el.name == "p":
                 if el.text.startswith("Your puzzle answer was"):
                     terminal.print()
