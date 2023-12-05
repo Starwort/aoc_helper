@@ -435,6 +435,8 @@ def _print_rank(msg: str) -> None:
     match = RANK.search(msg)
     if match:
         _pretty_print(f"You got rank {match.group(1)} for this puzzle")
+    else:
+        _pretty_print(msg)
 
 
 def submit_25(year: str):
