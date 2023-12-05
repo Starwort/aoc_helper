@@ -124,6 +124,9 @@ class list(UserList, typing.Generic[T]):
             data = []
         super().__init__(data)
 
+    def __iter__(self) -> typing.Iterator[T]:
+        return super().__iter__()
+
     @typing.overload
     def __getitem__(self, index: int) -> T:
         ...
@@ -470,7 +473,7 @@ class list(UserList, typing.Generic[T]):
     ) -> "list[SpecialisationT]":
         ...
 
-    def flat(self, recursive=False):
+    def flat(self: "list[Iterable[typing.Any]]", recursive=False):
         """Flattened version of this list.
 
         If recursive is specified, flattens recursively instead
@@ -482,11 +485,11 @@ class list(UserList, typing.Generic[T]):
             subitem
             for item in self
             for subitem in (
-                item.tee(1)[0].flatten(True)
+                item.tee(1)[0].flatten(True)  # type: ignore
                 if isinstance(item, iter)
-                else list(item).flat(True)
+                else list(item).flat(True)  # type: ignore
                 if isinstance(item, (builtins.list, list))
-                else item
+                else [item]
             )
         )
 
@@ -1008,7 +1011,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         ...
 
     def flatten(
-        self: "iter[Iterable[typing.Any]]",
+        self: "iter[Iterable[MaybeIterator[SpecialisationT]]]",
         recursive: bool = False,
     ) -> "iter[typing.Any]":
         """Flatten this iterator.
@@ -1022,11 +1025,11 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
             item
             for iterator in self
             for item in (
-                iterator.flatten(True)
+                iterator.flatten(True)  # type: ignore
                 if isinstance(iterator, iter)
-                else list(iterator).flat(True)
+                else list(iterator).flat(True)  # type: ignore
                 if isinstance(iterator, (builtins.list, list))
-                else iterator
+                else [iterator]
             )
         )
 
@@ -1516,7 +1519,7 @@ class Grid(typing.Generic[T]):
                     next_cost = cost + cost_function(self.data[y][x], value)
                     to_visit.push(
                         (
-                            next_cost + heuristic(*value) * heuristic_multiplier,
+                            next_cost + heuristic(*neighbour) * heuristic_multiplier,
                             next_cost,
                             neighbour,
                         )
