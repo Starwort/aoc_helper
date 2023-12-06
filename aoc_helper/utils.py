@@ -1101,9 +1101,14 @@ class range(iter[int]):
             raise ValueError("Step sizes must match")
         if not (self.start in other or other.start in self):
             return range(0, 0)
-        return range(
-            max(self.start, other.start), min(self.stop, other.stop), self.step
-        )
+        if self.step > 0:
+            return range(
+                max(self.start, other.start), min(self.stop, other.stop), self.step
+            )
+        else:
+            return range(
+                min(self.start, other.start), max(self.stop, other.stop), self.step
+            )
 
     def __or__(self, other: "range") -> typing.Union["range", "multirange"]:
         if not isinstance(other, range):
