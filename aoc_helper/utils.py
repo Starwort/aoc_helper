@@ -777,7 +777,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
 
     def next(self) -> T_Co:
         """Return the next element in the iterator, or raise StopIteration."""
-        return next(self.it)
+        return next(self)
 
     @typing.overload
     def next_or(self, default: T_Co) -> T_Co:  # type: ignore
@@ -790,7 +790,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
     def next_or(self, default):
         """Return the next element in the iterator, or default."""
         try:
-            return next(self.it, default)
+            return next(self, default)
         except StopIteration:
             return default
 
@@ -1055,9 +1055,304 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         return f"iter({self.it!r})"
 
 
-@functools.wraps(builtins.range)
-def range(*args, **kw):
-    return iter(builtins.range(*args, **kw))
+class range(iter[int]):
+    _SENTINEL = object()
+
+    def __init__(
+        self,
+        start: int,
+        stop: int = _SENTINEL,  # type: ignore
+        step: int = 1,
+    ):
+        if step == 0:
+            raise ValueError("Step size must not be 0")
+        if stop is range._SENTINEL:
+            stop = start
+            start = 0
+        self.start = start
+        self.stop = stop
+        self.step = step
+
+    def min(self) -> int:
+        if not self:
+            raise ValueError("Called min() on an empty range")
+        if self.step > 0:
+            return self.start
+        else:
+            x = (self.stop - self.start) // self.step
+            return self.start + x * self.step
+
+    def __iter__(self) -> typing.Iterator[int]:
+        return builtins.iter(builtins.range(self.start, self.stop, self.step))
+
+    def __next__(self) -> int:
+        raise ValueError("range object is not an iterator")
+
+    def __len__(self) -> int:
+        return builtins.len(builtins.range(self.start, self.stop, self.step))
+
+    def __contains__(self, item: int) -> bool:
+        return item in builtins.range(self.start, self.stop, self.step)
+
+    def __and__(self, other: "range") -> "range":
+        if not isinstance(other, range):
+            return NotImplemented
+        if self.step != other.step:
+            raise ValueError("Step sizes must match")
+        if not (self.start in other or other.start in self):
+            return range(0, 0)
+        return range(
+            max(self.start, other.start), min(self.stop, other.stop), self.step
+        )
+
+    def __or__(self, other: "range") -> typing.Union["range", "multirange"]:
+        if not isinstance(other, range):
+            return NotImplemented
+        return self + other
+
+    def __xor__(self, other: "range") -> "multirange":
+        if not isinstance(other, range):
+            return NotImplemented
+        if self.step != other.step:
+            raise ValueError("Step sizes must match")
+        return multirange(self - other, other - self)
+
+    def __sub__(
+        self, other: typing.Union[int, "range"]
+    ) -> typing.Union["range", "multirange"]:
+        if isinstance(other, int):
+            return range(self.start - other, self.stop - other, self.step)
+        elif isinstance(other, range):
+            if self.step != other.step:
+                raise ValueError("Step sizes must match")
+            if not (self.start in other or other.start in self):
+                # no intersection
+                return self
+            elif self.start == other.start:
+                if (
+                    self.stop <= other.stop
+                    and self.step > 0
+                    or self.stop >= other.stop
+                    and self.step < 0
+                ):
+                    return multirange()
+                else:
+                    return multirange(range(other.stop, self.stop, self.step))
+            if self.step > 0:
+                if self.start < other.start:
+                    if self.stop <= other.stop:
+                        # self.start other.start self.stop other.stop
+                        return range(self.start, other.start, self.step)
+                    else:
+                        # self.start other.start other.stop self.stop
+                        return multirange(
+                            range(self.start, other.start, self.step),
+                            range(other.stop, self.stop, self.step),
+                        )
+                elif self.stop >= other.stop:
+                    # other.start self.start other.stop self.stop
+                    return range(other.stop, self.stop, self.step)
+                else:
+                    # other.start self.start self.stop other.stop
+                    return multirange()
+
+            else:
+                if self.start > other.start:
+                    if self.stop >= other.stop:
+                        # other.stop self.stop other.start self.start
+                        return range(self.start, other.start, self.step)
+                    else:
+                        # other.stop self.stop self.start other.start
+                        return multirange()
+                elif self.stop <= other.stop:
+                    # other.stop self.stop other.start self.start
+                    return range(other.stop, self.stop, self.step)
+                else:
+                    # self.stop other.stop other.start self.start
+                    return multirange(
+                        range(self.start, other.start, self.step),
+                        range(other.stop, self.stop, self.step),
+                    )
+        else:
+            return NotImplemented
+
+    def __add__(
+        self, other: typing.Union[int, "range"]
+    ) -> typing.Union["range", "multirange"]:
+        if isinstance(other, int):
+            return range(self.start + other, self.stop + other, self.step)
+        elif isinstance(other, range):
+            if self.step != other.step:
+                raise ValueError("Step sizes must match")
+            if not (self.start in other or other.start in self):
+                # no intersection
+                return multirange(self, other)
+            if self.step > 0:
+                return range(
+                    min(self.start, other.start), max(self.stop, other.stop), self.step
+                )
+            else:
+                return range(
+                    max(self.start, other.start), min(self.stop, other.stop), self.step
+                )
+        else:
+            return NotImplemented
+
+    def __bool__(self) -> bool:
+        return bool(builtins.range(self.start, self.stop, self.step))
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, range):
+            return NotImplemented
+        if not self:
+            return not other
+        return (
+            self.start == other.start
+            and self.step == other.step
+            and len(self) == len(other)
+        )
+
+    def __repr__(self) -> str:
+        return f"range({self.start}, {self.stop}" + (
+            f", {self.step})" if self.step != 1 else ")"
+        )
+
+
+if typing.TYPE_CHECKING:
+    # make type-checkers allow interchangeable use of range and multirange
+    __multirange_base = range
+else:
+    __multirange_base = iter[T]
+
+
+class multirange(__multirange_base):
+    """Multirange class. Represents many disjoint ranges of integers. Step sizes
+    must always be 1.
+    """
+
+    def __init__(self, *ranges: typing.Union[range, "multirange"]):
+        self.ranges: builtins.list[range] = []
+        for the_range in ranges:
+            if isinstance(the_range, multirange):
+                self.ranges.extend(the_range.ranges)
+            else:
+                self.ranges.append(the_range)
+        self.simplify_ranges()
+
+    def __iter__(self) -> typing.Iterator[int]:
+        return itertools.chain(*self.ranges)
+
+    def __next__(self) -> int:
+        raise ValueError("multirange object is not an iterator")
+
+    def __len__(self) -> int:
+        return sum(len(range) for range in self.ranges)
+
+    def __contains__(self, item: int) -> bool:
+        return any(item in r for r in self.ranges)
+
+    def simplify_ranges(self):
+        self.ranges.sort(key=lambda range: range.start)
+        (*self.ranges,) = filter(None, self.ranges)
+        if not self.ranges:
+            return
+        last_range = self.ranges[0]
+        out_ranges = [last_range]
+        for range_ in self.ranges:
+            if range_.step != 1:
+                raise ValueError("Step sizes must be 1 for all ranges in a multirange")
+            if range_.start >= range_.stop:
+                continue
+            if range_.start <= last_range.stop:
+                last_range.stop = max(range_.stop, last_range.stop)
+                out_ranges[-1] = last_range
+            else:
+                last_range = range_
+                out_ranges.append(last_range)
+        self.ranges = out_ranges
+
+    def min(self) -> int:
+        if self.ranges:
+            return self.ranges[0].start
+        else:
+            raise ValueError("Called min() on an empty multirange")
+
+    def __and__(self, other: typing.Union["multirange", range]) -> "multirange":
+        if isinstance(other, multirange):
+            return multirange(*(r & s for r in self.ranges for s in other.ranges))
+        elif isinstance(other, range):
+            return multirange(*(r & other for r in self.ranges))
+        else:
+            return NotImplemented
+
+    def __rand__(self, other: typing.Union["multirange", range]) -> "multirange":
+        return self & other
+
+    def __or__(self, other: typing.Union["multirange", range]) -> "multirange":
+        if isinstance(other, multirange):
+            return multirange(*self.ranges, *other.ranges)
+        elif isinstance(other, range):
+            return multirange(*self.ranges, other)
+        else:
+            return NotImplemented
+
+    def __ror__(self, other: typing.Union["multirange", range]) -> "multirange":
+        return self | other
+
+    def __xor__(self, other: typing.Union["multirange", range]) -> "multirange":
+        if isinstance(other, (range, multirange)):
+            return multirange(self - other, other - self)
+        else:
+            return NotImplemented
+
+    def __rxor__(self, other: typing.Union["multirange", range]) -> "multirange":
+        return self ^ other
+
+    def __sub__(self, other: typing.Union[int, "multirange", range]) -> "multirange":
+        if isinstance(other, int):
+            return multirange(*(r - other for r in self.ranges))
+        elif isinstance(other, multirange):
+            result = []
+            for r in self.ranges:
+                for s in other.ranges:
+                    r = r - s
+                result.append(r)
+            return multirange(*result)
+        elif isinstance(other, range):
+            return multirange(*(r - other for r in self.ranges))
+        else:
+            return NotImplemented
+
+    def __add__(self, other: typing.Union[int, "multirange", range]) -> "multirange":
+        if isinstance(other, int):
+            return multirange(*(r + other for r in self.ranges))
+        elif isinstance(other, multirange):
+            return multirange(*self.ranges, *other.ranges)
+        elif isinstance(other, range):
+            return multirange(*self.ranges, other)
+        else:
+            return NotImplemented
+
+    def __radd__(self, other: typing.Union[int, "multirange", range]) -> "multirange":
+        return self + other
+
+    def __bool__(self) -> bool:
+        return any(self.ranges)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, multirange):
+            return self.ranges == other.ranges
+        elif isinstance(other, range):
+            return self.ranges == [other]
+        else:
+            return NotImplemented
+
+    def __repr__(self) -> str:
+        return f"multirange({self.ranges})"
+
+
+if not typing.TYPE_CHECKING:
+    range = functools.wraps(builtins.range, updated=())(range)
 
 
 @functools.wraps(builtins.map)
@@ -1065,7 +1360,7 @@ def map(*args, **kw):
     return iter(builtins.map(*args, **kw))
 
 
-def irange(start: int, stop: int) -> iter[int]:
+def irange(start: int, stop: int) -> range:
     """Inclusive range. Returns an iterator that
     yields values from start to stop, including both
     endpoints, stepping by one. Works even when
