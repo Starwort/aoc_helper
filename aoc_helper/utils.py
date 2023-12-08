@@ -12,7 +12,7 @@ from collections import Counter, UserList, deque
 from collections.abc import Hashable
 from heapq import heapify, heappop, heappush, nlargest, nsmallest
 
-from typing_extensions import ParamSpec
+from typing_extensions import ParamSpec, TypeVarTuple, Unpack
 
 from aoc_helper.types import (
     AddableT,
@@ -28,13 +28,16 @@ from aoc_helper.types import (
 )
 
 T = typing.TypeVar("T")
+T_Co = typing.TypeVar("T_Co", covariant=True)
 SpecialisationT = typing.TypeVar("SpecialisationT", covariant=True)
+Ts = TypeVarTuple("Ts")
 U = typing.TypeVar("U")
 GenericU = typing.Generic[T]
 P = ParamSpec("P")
 
 
 Iterable = typing.Union["iter[T]", typing.Iterable[T]]
+AnyIterable = typing.Union[Iterable[T], typing.List[T], typing.Tuple[T, ...], "list[T]"]
 MaybeIterator = typing.Union[T, Iterable["MaybeIterator[T]"]]
 
 
@@ -148,18 +151,31 @@ class list(UserList, typing.Generic[T]):
         """
         return list(map(func, self))
 
+    def starmapped(
+        self: "list[AnyIterable[Ts]]", func: typing.Callable[[Unpack[Ts]], U]
+    ) -> "list[U]":
+        """Return a list containing the result of calling func on each
+        element in the list. The function is called on each element immediately.
+        """
+        return list(itertools.starmap(func, self))
+
     def mapped_each(
-        self: typing.Union[
-            "list[Iterable[SpecialisationT]]",
-            "list[list[SpecialisationT]]",
-            "list[typing.List[SpecialisationT]]",
-        ],
+        self: "list[AnyIterable[SpecialisationT]]",
         func: typing.Callable[[SpecialisationT], U],
     ) -> "list[list[U]]":
         """Return a list containing the results of mapping each element of self
         with func. The function is called on each element immediately.
         """
         return self.mapped(lambda i: list(map(func, i)))
+
+    def starmapped_each(
+        self: "list[AnyIterable[AnyIterable[Ts]]]",
+        func: typing.Callable[[Unpack[Ts]], U],
+    ) -> "list[list[U]]":
+        """Return a list containing the results of mapping each element of self
+        with func. The function is called on each element immediately.
+        """
+        return self.mapped(lambda i: list(itertools.starmap(func, i)))
 
     def filtered(
         self, pred: typing.Union[typing.Callable[[T], bool], T, None] = None
@@ -581,9 +597,6 @@ class list(UserList, typing.Generic[T]):
         return f"list({super().__repr__()})"
 
 
-T_Co = typing.TypeVar("T_Co", covariant=True)
-
-
 class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
     """Smart/fluent iterator class"""
 
@@ -604,6 +617,14 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         """
         return iter(map(func, self))
 
+    def starmap(
+        self: "iter[AnyIterable[Ts]]", func: typing.Callable[[Unpack[Ts]], U]
+    ) -> "iter[U]":
+        """Return an iterator containing the result of calling func on each
+        element in this iterator.
+        """
+        return iter(itertools.starmap(func, self))
+
     def map_each(
         self: "iter[Iterable[SpecialisationT]]",
         func: typing.Callable[[SpecialisationT], U],
@@ -613,13 +634,22 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         """
         return iter(self.map(lambda i: iter(i).map(func)))
 
+    def starmap_each(
+        self: "iter[Iterable[AnyIterable[Ts]]]",
+        func: typing.Callable[[Unpack[Ts]], U],
+    ) -> "iter[iter[U]]":
+        """Return an iterator containing the result of calling func on each
+        element in each element in this iterator.
+        """
+        return iter(self.map(lambda i: iter(i).starmap(func)))
+
     def filter(
         self, pred: typing.Union[typing.Callable[[T_Co], bool], T_Co] = bool
     ) -> "iter[T_Co]":
         """Return an iterator containing only the elements for which pred
         returns True.
 
-        If pred is a T_Co (and T_Co is not callable), return an iterator
+        If pred is a T (and T is not callable), return an iterator
         containing only elements that compare equal to pred.
         """
         if not callable(pred) and pred is not None:
@@ -633,7 +663,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
 
         If pred is None, return the first element which is truthy.
 
-        If pred is a T_Co (and T_Co is not a callable or None), return the first element
+        If pred is a T (and T is not a callable or None), return the first element
         that compares equal to pred.
 
         If no such element exists, return None.
@@ -707,7 +737,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
     def accumulate(
         self,
         func: typing.Callable[[T_Co, T_Co], T_Co],
-        initial: T,  # type: ignore
+        initial: T_Co,  # type: ignore
     ) -> "iter[T_Co]":
         ...
 
