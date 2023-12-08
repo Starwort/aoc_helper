@@ -16,6 +16,7 @@ from aoc_helper import (
     list,
     map,
     range,
+    multirange,
     search,
     tail_call,
 )
