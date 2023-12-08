@@ -1,5 +1,4 @@
 from collections import defaultdict, deque
-from typing import TYPE_CHECKING
 
 import aoc_helper
 from aoc_helper import (
