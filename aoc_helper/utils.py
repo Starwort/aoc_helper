@@ -593,6 +593,12 @@ class list(UserList, typing.Generic[T]):
         """
         return list(itertools.permutations(self, r))
 
+    def divide(self, n: int) -> "list[list[T]]":
+        """Divide this list into n equal-sized chunks."""
+        assert self.len() % n == 0
+        chunk_size = self.len() // n
+        return list(chunk(self, chunk_size)).mapped(list)
+
     def __repr__(self) -> str:
         return f"list({super().__repr__()})"
 
