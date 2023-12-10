@@ -1,4 +1,4 @@
-from collections import defaultdict, deque, Counter
+from collections import Counter, defaultdict, deque
 
 import aoc_helper
 from aoc_helper import (
@@ -15,8 +15,8 @@ from aoc_helper import (
     iter,
     list,
     map,
-    range,
     multirange,
+    range,
     search,
     tail_call,
 )
