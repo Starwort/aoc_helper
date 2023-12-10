@@ -217,7 +217,8 @@ class list(typing.Generic[T], UserList[T]):
         return list(map(func, self))
 
     def starmapped(
-        self: "list[AnyIterable[Ts]]", func: typing.Callable[[Unpack[Ts]], U]
+        self: typing.Union["list[AnyIterable[Ts]]", "list[typing.Tuple[Unpack[Ts]]]"],
+        func: typing.Callable[[Unpack[Ts]], U],
     ) -> "list[U]":
         """Return a list containing the result of calling func on each
         element in the list. The function is called on each element immediately.
@@ -234,7 +235,10 @@ class list(typing.Generic[T], UserList[T]):
         return self.mapped(lambda i: list(map(func, i)))
 
     def starmapped_each(
-        self: "list[AnyIterable[AnyIterable[Ts]]]",
+        self: typing.Union[
+            "list[AnyIterable[AnyIterable[Ts]]]",
+            "list[AnyIterable[typing.Tuple[Unpack[Ts]]]]",
+        ],
         func: typing.Callable[[Unpack[Ts]], U],
     ) -> "list[list[U]]":
         """Return a list containing the results of mapping each element of self
@@ -747,7 +751,8 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         return iter(map(func, self))
 
     def starmap(
-        self: "iter[AnyIterable[Ts]]", func: typing.Callable[[Unpack[Ts]], U]
+        self: typing.Union["iter[Iterable[Ts]]", "iter[typing.Tuple[Unpack[Ts]]]"],
+        func: typing.Callable[[Unpack[Ts]], U],
     ) -> "iter[U]":
         """Return an iterator containing the result of calling func on each
         element in this iterator.
@@ -764,7 +769,10 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         return iter(self.map(lambda i: iter(i).map(func)))
 
     def starmap_each(
-        self: "iter[Iterable[AnyIterable[Ts]]]",
+        self: typing.Union[
+            "iter[Iterable[AnyIterable[Ts]]]",
+            "iter[Iterable[typing.Tuple[Unpack[Ts]]]]",
+        ],
         func: typing.Callable[[Unpack[Ts]], U],
     ) -> "iter[iter[U]]":
         """Return an iterator containing the result of calling func on each
@@ -1124,7 +1132,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
     ) -> "list[T_Co]":
         ...
 
-    def sorted(self, key=None, reverse=False): # type: ignore
+    def sorted(self, key=None, reverse=False):  # type: ignore
         """Return a list containing the elements of this iterator sorted
         according to the given key and reverse parameters.
         """
