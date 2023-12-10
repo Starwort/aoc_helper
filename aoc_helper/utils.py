@@ -93,13 +93,99 @@ def extract_iranges(raw: str) -> "list[builtins.range]":
     return list(map(_irange_from_match, re.findall(r"(\d+)(?:-(\d+))?", raw)))
 
 
-def chunk(iterable: Iterable[T], chunk_size: int) -> Iterable[tuple[T, ...]]:
+@typing.overload
+def chunk(
+    iterable: Iterable[T], chunk_size: typing.Literal[2]
+) -> "typing.Iterator[typing.Tuple[T, T]]":
+    ...
+
+
+@typing.overload
+def chunk(
+    iterable: Iterable[T], chunk_size: typing.Literal[3]
+) -> "typing.Iterator[typing.Tuple[T, T, T]]":
+    ...
+
+
+@typing.overload
+def chunk(
+    iterable: Iterable[T], chunk_size: typing.Literal[4]
+) -> "typing.Iterator[typing.Tuple[T, T, T, T]]":
+    ...
+
+
+@typing.overload
+def chunk(
+    iterable: Iterable[T], chunk_size: typing.Literal[5]
+) -> "typing.Iterator[typing.Tuple[T, T, T, T, T]]":
+    ...
+
+
+@typing.overload
+def chunk(
+    iterable: Iterable[T], chunk_size: typing.Literal[6]
+) -> "typing.Iterator[typing.Tuple[T, T, T, T, T, T]]":
+    ...
+
+
+@typing.overload
+def chunk(
+    iterable: Iterable[T], chunk_size: int
+) -> "typing.Iterator[typing.Tuple[T, ...]]":
+    ...
+
+
+def chunk(
+    iterable: Iterable[T], chunk_size: int
+) -> "typing.Iterator[typing.Tuple[T, ...]]":
     """Utility function to chunk an iterable into chunks of a given size.
 
     If there are not enough elements in the iterable to fill the last chunk,
     the last chunk will be dropped.
     """
     return zip(*[builtins.iter(iterable)] * chunk_size)
+
+
+@typing.overload
+def chunk_default(
+    iterable: Iterable[T], chunk_size: typing.Literal[2], default: T
+) -> "typing.Iterator[typing.Tuple[T, T]]":
+    ...
+
+
+@typing.overload
+def chunk_default(
+    iterable: Iterable[T], chunk_size: typing.Literal[3], default: T
+) -> "typing.Iterator[typing.Tuple[T, T, T]]":
+    ...
+
+
+@typing.overload
+def chunk_default(
+    iterable: Iterable[T], chunk_size: typing.Literal[4], default: T
+) -> "typing.Iterator[typing.Tuple[T, T, T, T]]":
+    ...
+
+
+@typing.overload
+def chunk_default(
+    iterable: Iterable[T], chunk_size: typing.Literal[5], default: T
+) -> "typing.Iterator[typing.Tuple[T, T, T, T, T]]":
+    ...
+
+
+@typing.overload
+def chunk_default(
+    iterable: Iterable[T], chunk_size: typing.Literal[6], default: T
+) -> "typing.Iterator[typing.Tuple[T, T, T, T, T, T]]":
+    ...
+
+
+@typing.overload
+def chunk_default(
+    iterable: Iterable[T], chunk_size: int, default: T
+) -> "typing.Iterator[typing.Tuple[T, ...]]":
+    ...
 
 
 def chunk_default(
@@ -240,14 +326,44 @@ class list(UserList, typing.Generic[T]):
             pred = (lambda j: lambda i: i == j)(pred)
         return not any(pred(item) for item in self)
 
+    @typing.overload
+    def windowed(self, window_size: typing.Literal[2]) -> "list[typing.Tuple[T, T]]":
+        ...
+
+    @typing.overload
+    def windowed(self, window_size: typing.Literal[3]) -> "list[typing.Tuple[T, T, T]]":
+        ...
+
+    @typing.overload
+    def windowed(
+        self, window_size: typing.Literal[4]
+    ) -> "list[typing.Tuple[T, T, T, T]]":
+        ...
+
+    @typing.overload
+    def windowed(
+        self, window_size: typing.Literal[5]
+    ) -> "list[typing.Tuple[T, T, T, T, T]]":
+        ...
+
+    @typing.overload
+    def windowed(
+        self, window_size: typing.Literal[6]
+    ) -> "list[typing.Tuple[T, T, T, T, T, T]]":
+        ...
+
+    @typing.overload
     def windowed(self, window_size: int) -> "list[typing.Tuple[T, ...]]":
+        ...
+
+    def windowed(self, window_size):
         """Return an list containing the elements of this list in
         a sliding window of size window_size. If there are not enough elements
         to create a full window, the list will be empty.
         """
         return list(self.iter().window(window_size))
 
-    def shifted_zip(self, shift: int = 1) -> "iter[typing.Tuple[T, ...]]":
+    def shifted_zip(self, shift: int = 1) -> "iter[typing.Tuple[T, T]]":
         """Return an iterator containing pairs of elements separated by shift.
 
         If there are fewer than shift elements, the iterator will be empty.
@@ -296,7 +412,31 @@ class list(UserList, typing.Generic[T]):
             return list(itertools.accumulate(self, func))
         return list(itertools.accumulate(self, func, initial))  # type: ignore
 
+    @typing.overload
+    def chunked(self, n: typing.Literal[2]) -> "list[typing.Tuple[T, T]]":
+        ...
+
+    @typing.overload
+    def chunked(self, n: typing.Literal[3]) -> "list[typing.Tuple[T, T, T]]":
+        ...
+
+    @typing.overload
+    def chunked(self, n: typing.Literal[4]) -> "list[typing.Tuple[T, T, T, T]]":
+        ...
+
+    @typing.overload
+    def chunked(self, n: typing.Literal[5]) -> "list[typing.Tuple[T, T, T, T, T]]":
+        ...
+
+    @typing.overload
+    def chunked(self, n: typing.Literal[6]) -> "list[typing.Tuple[T, T, T, T, T, T]]":
+        ...
+
+    @typing.overload
     def chunked(self, n: int) -> "list[typing.Tuple[T, ...]]":
+        ...
+
+    def chunked(self, n):
         """Return a list containing the elements of this list in chunks
         of size n. If there are not enough elements to fill the last chunk, it
         will be dropped.
@@ -766,7 +906,37 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         for el in self:
             func(el)
 
+    @typing.overload
+    def chunk(self, n: typing.Literal[2]) -> "iter[typing.Tuple[T_Co, T_Co]]":
+        ...
+
+    @typing.overload
+    def chunk(self, n: typing.Literal[3]) -> "iter[typing.Tuple[T_Co, T_Co, T_Co]]":
+        ...
+
+    @typing.overload
+    def chunk(
+        self, n: typing.Literal[4]
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co]]":
+        ...
+
+    @typing.overload
+    def chunk(
+        self, n: typing.Literal[5]
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co]]":
+        ...
+
+    @typing.overload
+    def chunk(
+        self, n: typing.Literal[6]
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co, T_Co]]":
+        ...
+
+    @typing.overload
     def chunk(self, n: int) -> "iter[typing.Tuple[T_Co, ...]]":
+        ...
+
+    def chunk(self, n):
         """Return an iterator containing the elements of this iterator in chunks
         of size n. If there are not enough elements to fill the last chunk, it
         will be dropped.
@@ -797,14 +967,48 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
             elements.append(el)
             yield tuple(elements)
 
+    @typing.overload
+    def window(
+        self, window_size: typing.Literal[2]
+    ) -> "iter[typing.Tuple[T_Co, T_Co]]":
+        ...
+
+    @typing.overload
+    def window(
+        self, window_size: typing.Literal[3]
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co]]":
+        ...
+
+    @typing.overload
+    def window(
+        self, window_size: typing.Literal[4]
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co]]":
+        ...
+
+    @typing.overload
+    def window(
+        self, window_size: typing.Literal[5]
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co]]":
+        ...
+
+    @typing.overload
+    def window(
+        self, window_size: typing.Literal[6]
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co, T_Co]]":
+        ...
+
+    @typing.overload
     def window(self, window_size: int) -> "iter[typing.Tuple[T_Co, ...]]":
+        ...
+
+    def window(self, window_size):
         """Return an iterator containing the elements of this iterator in
         a sliding window of size window_size. If there are not enough elements
         to create a full window, the iterator will be empty.
         """
         return iter(self._window(window_size))
 
-    def shifted_zip(self, shift: int = 1) -> "iter[typing.Tuple[T_Co, ...]]":
+    def shifted_zip(self, shift: int = 1) -> "iter[typing.Tuple[T_Co, T_Co]]":
         """Return an iterator containing pairs of elements separated by shift.
 
         If there are fewer than shift elements, the iterator will be empty.
