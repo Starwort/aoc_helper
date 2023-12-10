@@ -201,31 +201,10 @@ def chunk_default(
     )
 
 
-class list(UserList, typing.Generic[T]):
+class list(typing.Generic[T], UserList[T]):
     """Smart/fluent list class"""
 
     _SENTINEL = object()
-
-    def __init__(self, data: typing.Optional[Iterable[T]] = None) -> None:
-        # I don't know why this is necessary, but UserList seems to default to
-        # constructing as list[Any] instead of list[T] if I don't do this.
-        if data is None:
-            data = []
-        super().__init__(data)
-
-    def __iter__(self) -> typing.Iterator[T]:
-        return super().__iter__()
-
-    @typing.overload
-    def __getitem__(self, index: int) -> T:
-        ...
-
-    @typing.overload
-    def __getitem__(self, index: slice) -> "list[T]":
-        ...
-
-    def __getitem__(self, index):
-        return super().__getitem__(index)
 
     def iter(self) -> "iter[T]":
         """Return an iterator over the list."""
@@ -467,8 +446,9 @@ class list(UserList, typing.Generic[T]):
 
         If initial is provided, it is used as the initial value.
         """
+        # Pylance *hates* this method because the specialisation isn't provided on the implementation
         if initial is self._SENTINEL:
-            return sum(self)
+            return sum(self)  # type: ignore
         return sum(self, initial)  # type: ignore
 
     @typing.overload
@@ -488,8 +468,9 @@ class list(UserList, typing.Generic[T]):
 
         If initial is provided, it is used as the initial value.
         """
+        # Pylance *hates* this method because the specialisation isn't provided on the implementation
         if initial is self._SENTINEL:
-            return math.prod(self)
+            return math.prod(self)  # type: ignore
         # math.prod isn't actually guaranteed to run for non-numerics, so we
         # have to ignore the type error here.
         return math.prod(self, start=initial)  # type: ignore
@@ -510,11 +491,13 @@ class list(UserList, typing.Generic[T]):
     ) -> "list[T]":
         ...
 
-    def sorted(self, key=None, reverse=False):
+    def sorted(self, key=None, reverse=False):  # type: ignore
         """Return a list containing the elements of this list sorted
         according to the given key and reverse parameters.
         """
-        return list(sorted(self, key=key, reverse=reverse))
+        # I hate working with specialisations I should have just written a pyi
+        result: typing.List[T] = sorted(self, key=key, reverse=reverse)  # type: ignore
+        return list(result)
 
     def reversed(self) -> "list[T]":
         """Return a list containing the elements of this list in
@@ -1096,11 +1079,8 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
 
         If initial is provided, it is used as the initial value.
         """
-        if typing.TYPE_CHECKING:
-            # HACK to make mypy happy with iterating this iter
-            self = list(self)
         if initial is self._SENTINEL:
-            return sum(self)
+            return sum(self)  # type: ignore
         # sum isn't actually guaranteed to run for non-numerics, so we have to
         # ignore the type error here.
         return sum(self, initial)  # type: ignore
@@ -1122,11 +1102,8 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
 
         If initial is provided, it is used as the initial value.
         """
-        if typing.TYPE_CHECKING:
-            # HACK to make mypy happy with iterating this iter
-            self = list(self)
         if initial is self._SENTINEL:
-            return math.prod(self)
+            return math.prod(self)  # type: ignore
         # math.prod isn't actually guaranteed to run for non-numerics, so we
         # have to ignore the type error here.
         return math.prod(self, start=initial)  # type: ignore
@@ -1147,14 +1124,12 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
     ) -> "list[T_Co]":
         ...
 
-    def sorted(self, key=None, reverse=False):
+    def sorted(self, key=None, reverse=False): # type: ignore
         """Return a list containing the elements of this iterator sorted
         according to the given key and reverse parameters.
         """
-        # HACK to make mypy happy with iterating this iter
-        if typing.TYPE_CHECKING:
-            self = list(self)
-        return list(sorted(self, key=key, reverse=reverse))
+        result: typing.List[T_Co] = sorted(self, key=key, reverse=reverse)  # type: ignore
+        return list(result)
 
     def reversed(self) -> "iter[T_Co]":
         """Return an iterator containing the elements of this iterator in
