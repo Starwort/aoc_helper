@@ -1412,7 +1412,12 @@ class range(iter[int]):
         elif isinstance(other, range):
             if self.step != other.step:
                 raise ValueError("Step sizes must match")
-            if not (self.start in other or other.start in self):
+            if not (
+                self.start in other
+                or other.start in self
+                or (self.stop == other.start and other.start - self.step in self)
+                or (self.start == other.stop and self.start - self.step in other)
+            ):
                 # no intersection
                 return multirange(self, other)
             if self.step > 0:
