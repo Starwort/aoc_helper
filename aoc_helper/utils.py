@@ -59,21 +59,21 @@ def extract_uints(raw: str) -> "list[int]":
     return list(map(int, re.findall(r"(\d+)", raw)))
 
 
-def _range_from_match(range: typing.Tuple[str, str]) -> builtins.range:
-    if range[1]:
-        return builtins.range(int(range[0]), int(range[1]))
+def _range_from_match(match: typing.Tuple[str, str]) -> "range":
+    if match[1]:
+        return range(int(match[0]), int(match[1]))
     else:
-        return builtins.range(int(range[0]), int(range[0]))
+        return range(int(match[0]), int(match[0]))
 
 
-def _irange_from_match(range: typing.Tuple[str, str]) -> builtins.range:
-    if range[1]:
-        return builtins.range(int(range[0]), int(range[1]) + 1)
+def _irange_from_match(match: typing.Tuple[str, str]) -> "range":
+    if match[1]:
+        return range(int(match[0]), int(match[1]) + 1)
     else:
-        return builtins.range(int(range[0]), int(range[0]) + 1)
+        return range(int(match[0]), int(match[0]) + 1)
 
 
-def extract_ranges(raw: str) -> "list[builtins.range]":
+def extract_ranges(raw: str) -> "list[range]":
     """Utility function to extract all ranges from some string.
 
     Ranges are interpreted as `start-stop` and are not inclusive.
@@ -83,7 +83,7 @@ def extract_ranges(raw: str) -> "list[builtins.range]":
     return list(map(_range_from_match, re.findall(r"(\d+)(?:-(\d+))?", raw)))
 
 
-def extract_iranges(raw: str) -> "list[builtins.range]":
+def extract_iranges(raw: str) -> "list[range]":
     """Utility function to extract all ranges from some string.
 
     Ranges are interpreted as `start-stop` and are inclusive.
