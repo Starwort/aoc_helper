@@ -17,6 +17,7 @@ from typing_extensions import ParamSpec, TypeVarTuple, Unpack
 from aoc_helper.types import (
     AddableT,
     AddableU,
+    HashableU,
     MultipliableT,
     MultipliableU,
     SubtractableT,
@@ -616,7 +617,7 @@ class list(typing.Generic[T], UserList[T]):
     ) -> "list[SpecialisationT]":
         ...
 
-    def flat(self: "list[Iterable[typing.Any]]", recursive=False):
+    def flat(self: "list[Iterable[typing.Any]]", recursive=False): # type: ignore
         """Flattened version of this list.
 
         If recursive is specified, flattens recursively instead
@@ -1963,9 +1964,9 @@ class Grid(typing.Generic[T]):
         self: "Grid[AddableT]",
         start: typing.Tuple[int, int] = (0, 0),
         end: typing.Optional[typing.Tuple[int, int]] = None,
-        valid_traversal: typing.Callable[
-            [AddableT, AddableT], bool
-        ] = lambda i, j: True,
+        initial_state: HashableU = (),
+        is_valid_end: typing.Callable[[HashableU], bool] = lambda _: True,
+        next_state: typing.Callable[[HashableU, int, int, AddableT, AddableT], typing.Optional[HashableU]] = lambda old, dx, dy, i, j: (),
         cost_function: typing.Callable[[AddableT, AddableT], AddableT] = (
             lambda i, j: j - i  # type: ignore
         ),
@@ -1978,9 +1979,17 @@ class Grid(typing.Generic[T]):
 
         start defaults to the top left, and end defaults to the bottom right.
 
-        valid_traversal is a function that takes the start value and the end
-        value of a potential traversal, and returns whether that traversal is
-        valid. The default is that any traversal is valid.
+        initial_state is for custom state for the pathfinding algorithm (e.g.
+        extra restrictions on the path). State must be a hashable type
+
+        is_valid_end is a function that takes in a state and returns whether the
+        search can end with that state. It will only be called if the target
+        position has been found.
+
+        next_state is a function that takes the current state, the change in the
+        x and y coordinates, the previous cell value, and the current cell
+        value, and returns either the next state or None if the traversal cannot
+        be performed.
 
         cost_function is a function that takes the start value and the end value
         of a traversal, and returns the cost of that traversal. The default is
@@ -2014,7 +2023,7 @@ class Grid(typing.Generic[T]):
                 "`start` argument to pathfind() should not be None", DeprecationWarning
             )
             start = 0, 0
-        to_visit = PrioQueue([(initial_cost, initial_cost, start)])
+        to_visit = PrioQueue([(initial_cost, initial_cost, start, initial_state)])
         visited = set()
         if end is None:
             target = len(self.data[0]) - 1, len(self.data) - 1
@@ -2036,20 +2045,22 @@ class Grid(typing.Generic[T]):
             else (lambda x, y: 0)
         )  # don't bother with expensive sqrt if we're not using it
 
-        for _heuristic_cost, cost, (x, y) in to_visit:
-            if (x, y) == target:
+        for _heuristic_cost, cost, (x, y), state in to_visit:
+            if (x, y) == target and is_valid_end(state):
                 return cost
-            if (x, y) in visited:
+            if (x, y, state) in visited:
                 continue
-            visited.add((x, y))
+            visited.add((x, y, state))
             for neighbour, value in neighbours(x, y):
-                if valid_traversal(self.data[y][x], value):
+                new_state = next_state(state, neighbour[0] - x, neighbour[1] - y, self.data[y][x], value)
+                if new_state is not None:
                     next_cost = cost + cost_function(self.data[y][x], value)
                     to_visit.push(
                         (
                             next_cost + heuristic(*neighbour) * heuristic_multiplier,
                             next_cost,
                             neighbour,
+                            new_state,
                         )
                     )
 

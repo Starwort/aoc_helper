@@ -52,12 +52,18 @@ class _SupportsSumWithNoDefaultGiven(
     ...
 
 
+class SupportsHash(Protocol):
+    def __hash__(self) -> Any:
+        ...
+
+
 SupportsSumNoDefaultT = TypeVar(
     "SupportsSumNoDefaultT", bound=_SupportsSumWithNoDefaultGiven
 )
 
 AddableT = TypeVar("AddableT", bound=SupportsAdd[Any, Any])
 AddableU = TypeVar("AddableU", bound=SupportsAdd[Any, Any])
+HashableU = TypeVar("HashableU", bound=SupportsHash)
 
 SubtractableT = TypeVar("SubtractableT", bound=SupportsSub[Any, Any])
 
