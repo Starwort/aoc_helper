@@ -617,7 +617,7 @@ class list(typing.Generic[T], UserList[T]):
     ) -> "list[SpecialisationT]":
         ...
 
-    def flat(self: "list[Iterable[typing.Any]]", recursive=False): # type: ignore
+    def flat(self: "list[Iterable[typing.Any]]", recursive=False):  # type: ignore
         """Flattened version of this list.
 
         If recursive is specified, flattens recursively instead
@@ -1359,10 +1359,10 @@ class range(iter[int]):
                 return self
             elif self.start == other.start:
                 if (
-                    self.stop <= other.stop
-                    and self.step > 0
-                    or self.stop >= other.stop
-                    and self.step < 0
+                    (self.stop <= other.stop and self.step > 0)
+                    or (self.stop >= other.stop and self.step < 0)
+                    or (self.stop == other.start and other.start - self.step in self)
+                    or (self.start == other.stop and self.start - self.step in other)
                 ):
                     return multirange()
                 else:
@@ -1966,7 +1966,9 @@ class Grid(typing.Generic[T]):
         end: typing.Optional[typing.Tuple[int, int]] = None,
         initial_state: HashableU = (),
         is_valid_end: typing.Callable[[HashableU], bool] = lambda _: True,
-        next_state: typing.Callable[[HashableU, int, int, AddableT, AddableT], typing.Optional[HashableU]] = lambda old, dx, dy, i, j: (),
+        next_state: typing.Callable[
+            [HashableU, int, int, AddableT, AddableT], typing.Optional[HashableU]
+        ] = lambda old, dx, dy, i, j: (),
         cost_function: typing.Callable[[AddableT, AddableT], AddableT] = (
             lambda i, j: j - i  # type: ignore
         ),
@@ -2052,7 +2054,9 @@ class Grid(typing.Generic[T]):
                 continue
             visited.add((x, y, state))
             for neighbour, value in neighbours(x, y):
-                new_state = next_state(state, neighbour[0] - x, neighbour[1] - y, self.data[y][x], value)
+                new_state = next_state(
+                    state, neighbour[0] - x, neighbour[1] - y, self.data[y][x], value
+                )
                 if new_state is not None:
                     next_cost = cost + cost_function(self.data[y][x], value)
                     to_visit.push(
