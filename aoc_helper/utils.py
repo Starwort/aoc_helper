@@ -1358,15 +1358,12 @@ class range(iter[int]):
                 # no intersection
                 return self
             elif self.start == other.start:
-                if (
-                    (self.stop <= other.stop and self.step > 0)
-                    or (self.stop >= other.stop and self.step < 0)
-                    or (self.stop == other.start and other.start - self.step in self)
-                    or (self.start == other.stop and self.start - self.step in other)
+                if (self.stop <= other.stop and self.step > 0) or (
+                    self.stop >= other.stop and self.step < 0
                 ):
                     return multirange()
                 else:
-                    return multirange(range(other.stop, self.stop, self.step))
+                    return range(other.stop, self.stop, self.step)
             if self.step > 0:
                 if self.start < other.start:
                     if self.stop <= other.stop:
