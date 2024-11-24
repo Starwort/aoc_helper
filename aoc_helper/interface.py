@@ -11,7 +11,18 @@ from warnings import warn
 import requests
 from bs4 import BeautifulSoup as Soup
 
-from .data import HEADERS, LEADERBOARD_URL, PRACTICE_DATA_DIR
+from .data import (
+    DATA_DIR,
+    DEFAULT_YEAR,
+    HEADERS,
+    LEADERBOARD_URL,
+    PRACTICE_DATA_DIR,
+    RANK,
+    TODAY,
+    URL,
+    WAIT_TIME,
+    get_cookie,
+)
 
 T = typing.TypeVar("T")
 U = typing.TypeVar("U")
@@ -66,9 +77,6 @@ else:
             return val
 
     work = _rich_work
-
-
-from .data import DATA_DIR, DEFAULT_YEAR, RANK, TODAY, URL, WAIT_TIME, get_cookie
 
 
 def _open_page(page: str) -> None:
@@ -208,11 +216,11 @@ def _load_leaderboard_times(
         part_1_times: typing.List[datetime.timedelta] = []
         part_2_times: typing.List[datetime.timedelta] = []
         in_part_2 = False
-        for time in times:
-            if time.span.text == "  1)":  # type: ignore
+        for leaderboard_time in times:
+            if leaderboard_time.span.text == "  1)":  # type: ignore
                 in_part_2 = not in_part_2
             time_to_solve = datetime.datetime.strptime(
-                time.select_one(".leaderboard-time").text,  # type: ignore
+                leaderboard_time.select_one(".leaderboard-time").text,  # type: ignore
                 "%b %d  %H:%M:%S",
             ) - datetime.datetime(1900, 12, day)
             if in_part_2:
@@ -529,9 +537,9 @@ def get_sample_input(
     testing_file = testing_dir / "tests.json"
 
     if testing_file.exists():
-        test_info: typing.Dict[
-            str, typing.Optional[typing.Tuple[str, str]]
-        ] = json.loads(testing_file.read_text())
+        test_info: typing.Dict[str, typing.Optional[typing.Tuple[str, str]]] = (
+            json.loads(testing_file.read_text())
+        )
     else:
         test_info: typing.Dict[str, typing.Optional[typing.Tuple[str, str]]] = {}
 
