@@ -85,7 +85,6 @@ def read(day: int, year: int, colour: typing.Literal["auto", "always", "never"])
     try:
         from rich.console import Console, ConsoleOptions, RenderResult
         from rich.markdown import TextElement
-        from rich.panel import Panel
         from rich.segment import Segment
     except ImportError:
         print(
@@ -161,8 +160,10 @@ def read(day: int, year: int, colour: typing.Literal["auto", "always", "never"])
             render_options = options.update(width=console.width - self.width - 2)
             lines = console.render_lines(self.text, render_options)
             for i, line in enumerate(lines):
-                yield f"{self.number:>{self.width}}. " if i == 0 else (
-                    " " * self.width + "  "
+                yield (
+                    f"{self.number:>{self.width}}. "
+                    if i == 0
+                    else (" " * self.width + "  ")
                 )
                 yield from line
                 yield "\n"
