@@ -1,9 +1,15 @@
+import io
 import json
 import os
 import pathlib
 import re
+import sys
 import typing
+from contextlib import redirect_stdout
 from datetime import date, timedelta
+from itertools import zip_longest
+
+from .utils import chunk_default
 
 try:
     import click
@@ -24,6 +30,7 @@ from .data import (
 from .interface import _estimate_practice_rank, _format_timedelta
 from .interface import fetch as fetch_input
 from .interface import submit as submit_answer
+from .interface import validate_token as validate_token_
 
 TEMPLATE = (pathlib.Path(__file__).parent / "day_template.py").read_text()
 
@@ -302,6 +309,177 @@ def clean(days: typing.List[int], year: int, type: str):
             (DATA_DIR / f"{year}" / f"{day}" / "2.solution").unlink(True)
         if type in ("tests", "all"):
             (DATA_DIR / f"{year}" / f"{day}" / "tests.json").unlink(True)
+
+
+@cli.command(
+    name="visualise-cache",
+    aliases=["cache", "visualize-cache", "list-cache", "view-cache"],
+)
+@click.option(
+    "-c",
+    "--colour",
+    "--color",
+    type=click.Choice(["auto", "always", "never"]),
+    default="auto",
+)
+@click.option(
+    "--validate-token/--no-validate-token",
+    default=True,
+)
+@click.option(
+    "--update-token-on-invalid/--no-update-token-on-invalid",
+    default=False,
+    help=(
+        "Whether to prompt for a new token if the current one is invalid."
+        " Only takes effect if --validate-token is set"
+    ),
+)
+def visualise_cache(
+    colour: typing.Literal["auto", "always", "never"],
+    validate_token: bool,
+    update_token_on_invalid: bool,
+):
+    """Get a visual overview of the aoc_helper cache"""
+    from .formatting import print
+
+    try:
+        from rich.console import Console
+    except ImportError:
+        if colour != "never":
+            print(
+                "Missing dependency rich. Colour will be disabled. Please",
+                "`pip install rich`, `pip install aoc_helper[full]`, or",
+                "`pip install aoc_helper[fancy]`",
+                file=sys.stderr,
+            )
+
+        def rule(title: str):
+            width = 73 - 4 - len(title)
+            left = width // 2
+            right = width - left
+            print(f" {'-' * left} {title} {'-' * right}")
+
+        real_width = 73
+    else:
+        terminal = Console()
+        real_width = terminal.width if terminal.is_terminal else 73
+        terminal.width = 73
+        if colour != "never":
+            if colour == "auto":
+                colour = "always" if terminal.is_terminal else "never"
+            if colour == "always":
+                Console._environ["FORCE_COLOR"] = "1"  # type: ignore
+            rule = terminal.rule
+        else:
+
+            def rule(title: str):
+                width = 73 - 2 - len(title)
+                left = width // 2
+                right = width - left
+                print(f"{'=' * left} {title} {'=' * right}")
+
+    if colour == "always":
+        from .formatting import GREEN, RED, RESET, YELLOW
+    else:
+        GREEN = RED = YELLOW = RESET = ""
+
+    token = get_cookie(missing_ok=not update_token_on_invalid)
+    cached_years = sorted(DATA_DIR.iterdir())
+    did_print = False
+
+    if token is not None:
+        valid = None
+        if validate_token:
+            valid = validate_token_(update_token_on_invalid)
+        if colour == "always" or valid is not False:
+            print(
+                {
+                    None: f"{YELLOW}Token (not validated){RESET}",
+                    True: f"{GREEN}Token{RESET}",
+                    False: f"{RED}Token{RESET}",
+                }[valid]
+            )
+            did_print = True
+    elif colour == "always":
+        print(f"{RED}Token{RESET}")
+        did_print = True
+
+    def format(
+        val: str, exists: bool, success_colour: str = GREEN, fail_colour: str = RED
+    ):
+        if colour == "always":
+            text_col = success_colour if exists else fail_colour
+            return f"{text_col}{val}{text_col and RESET}"
+        else:
+            return val if exists else (" " * len(val))
+
+    years = [year for year in cached_years if year.is_dir() and year.name.isnumeric()]
+    # input   tests
+    # solutions 1 2
+    # practice data
+    days = range(1, 26)
+    blocks_that_fit = max((real_width + 4) // 77, 1)
+
+    blocks = []
+    for year in years:
+        with io.StringIO() as buf, redirect_stdout(buf):
+            rule(year.name)
+            has_input = [(year / f"{day}.in").exists() for day in days]
+            has_tests = [(year / f"{day}" / "tests.json").exists() for day in days]
+            has_solution_1 = [(year / f"{day}" / "1.solution").exists() for day in days]
+            has_solution_2 = [(year / f"{day}" / "2.solution").exists() for day in days]
+            has_any_solution = [a or b for a, b in zip(has_solution_1, has_solution_2)]
+            has_practice = [
+                (PRACTICE_DATA_DIR / year.name / f"{day}").exists() for day in days
+            ]
+            for block in range(5):
+                print(
+                    *(f"{day:^13}" for day in range(block * 5 + 1, block * 5 + 6)),
+                    sep="  ",
+                )
+                print(
+                    *(
+                        f"{format('Input', has_input[day])}   {format('Tests', has_tests[day])}"
+                        for day in range(block * 5, block * 5 + 5)
+                    ),
+                    sep="  ",
+                )
+                print(
+                    *(
+                        f"{format('Solutions', has_any_solution[day], '', '')}"
+                        f" {format('1', has_solution_1[day])}"
+                        f" {format('2', has_solution_2[day])}"
+                        for day in range(block * 5, block * 5 + 5)
+                    ),
+                    sep="  ",
+                )
+                print(
+                    *(
+                        format("Practice data", has_practice[day])
+                        for day in range(block * 5, block * 5 + 5)
+                    ),
+                    sep="  ",
+                )
+            blocks.append(buf.getvalue())
+
+    import builtins
+
+    for blocks in chunk_default(blocks, blocks_that_fit, ""):
+        if did_print:
+            print()
+        blocks = [block.splitlines() for block in blocks]
+        for lines in zip_longest(*blocks, fillvalue=""):
+            builtins.print("    ".join(lines))
+
+
+@cli.command(name="validate-token", aliases=["token", "check-token"])
+def validate_token():
+    """
+    Validate the stored session token. Will prompt for a new token if the
+    current one is invalid.
+    """
+    if validate_token_():
+        print("Token is valid")
 
 
 @cli.command(name="practice-results")

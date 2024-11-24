@@ -1,9 +1,7 @@
-import builtins
 import datetime
 import json
 import pathlib
 import sys
-import time
 import typing
 import webbrowser
 from warnings import warn
@@ -23,60 +21,10 @@ from .data import (
     WAIT_TIME,
     get_cookie,
 )
+from .formatting import BLUE, GOLD, GREEN, RED, RESET, YELLOW, print, wait, work
 
 T = typing.TypeVar("T")
 U = typing.TypeVar("U")
-
-try:
-    from rich import print, progress
-except ImportError:
-    from builtins import print  # suppress a Pylance warning
-
-    RED = ""
-    YELLOW = ""
-    GREEN = ""
-    BLUE = ""
-    GOLD = ""
-    RESET = ""
-
-    def wait(msg: str, secs: float) -> None:
-        print(msg)
-        time.sleep(secs)
-
-    def work(msg: str, worker: typing.Callable[[U], T], data: U) -> T:
-        print(msg)
-        return worker(data)
-
-else:
-    RED = "[red]"
-    YELLOW = "[yellow]"
-    GREEN = "[green]"
-    BLUE = "[blue]"
-    GOLD = "[gold1]"
-    RESET = "[/]"
-
-    def wait(msg: str, secs: float) -> None:
-        for _ in progress.track(
-            builtins.range(int(10 * secs)),
-            description=msg,
-            show_speed=False,
-            transient=True,
-        ):
-            time.sleep(0.1)
-
-    def _rich_work(msg: str, worker: typing.Callable[[U], T], data: U) -> T:
-        with progress.Progress(
-            progress.TextColumn("{task.description}"),
-            progress.SpinnerColumn(),
-            progress.TimeElapsedColumn(),
-            transient=True,
-        ) as bar:
-            task = bar.add_task(msg)
-            val = worker(data)
-            bar.advance(task)
-            return val
-
-    work = _rich_work
 
 
 def _open_page(page: str) -> None:
@@ -103,6 +51,28 @@ def _pretty_print(message: str) -> None:
         print(GOLD + message + RESET)
     else:
         raise ValueError("Failed to parse response.")
+
+
+def validate_token(allow_prompt: bool = True) -> bool:
+    cookie = get_cookie(not allow_prompt)
+    if cookie is None:
+        return False
+    resp = requests.get(
+        URL.format(day=1, year=2015) + "/input",
+        cookies=get_cookie(),
+        headers=HEADERS,
+    )
+    if not resp.ok:
+        if resp.status_code != 400:
+            raise ValueError("Received bad response")
+        if not allow_prompt:
+            return False
+        token_file = DATA_DIR / "token.txt"
+        print(f"{RED}Your token has expired. Please enter your new" f" token.{RESET}")
+        token = input(">>> ")
+        token_file.write_text(token)
+        return validate_token(True)
+    return True
 
 
 def fetch(day: int = TODAY, year: int = DEFAULT_YEAR, never_print: bool = False) -> str:
@@ -146,22 +116,10 @@ def fetch(day: int = TODAY, year: int = DEFAULT_YEAR, never_print: bool = False)
         if "--practice" in sys.argv:
             unlock = unlock.replace(year=now.year, month=now.month, day=now.day)
         if now < unlock:
-            # On the first day, run a stray request to validate the user's token
             if day == 1:
-                resp = requests.get(
-                    URL.format(day=1, year=2015) + "/input",
-                    cookies=get_cookie(),
-                    headers=HEADERS,
-                )
-                if resp.status_code == 400:
-                    token_file = DATA_DIR / "token.txt"
-                    print(
-                        f"{RED}Your token has expired. Please enter your new"
-                        f" token.{RESET}"
-                    )
-                    token = input(">>> ")
-                    token_file.write_text(token)
-                    return fetch(day, year, never_print)
+                # If we're waiting for the first puzzle, the user's token may
+                # have expired. We should check that now.
+                validate_token()
                 now = datetime.datetime.utcnow()
             wait(
                 f"{YELLOW}Waiting for puzzle unlock...{RESET}",

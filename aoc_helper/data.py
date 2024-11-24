@@ -1,6 +1,7 @@
 import datetime
 import pathlib
 import re
+import typing
 
 try:
     import importlib_metadata as metadata  # type: ignore
@@ -29,10 +30,26 @@ HEADERS = {
 }
 
 
-def get_cookie():
+@typing.overload
+def get_cookie(missing_ok: typing.Literal[False]) -> dict[str, str]: ...
+@typing.overload
+def get_cookie() -> dict[str, str]: ...
+@typing.overload
+def get_cookie(
+    missing_ok: typing.Literal[True],
+) -> typing.Optional[typing.Dict[str, str]]: ...
+@typing.overload
+def get_cookie(
+    missing_ok: bool,
+) -> typing.Optional[typing.Dict[str, str]]: ...
+
+
+def get_cookie(missing_ok=False):
     token_file = DATA_DIR / "token.txt"
     if token_file.exists():
         return {"session": token_file.read_text().strip("\n")}
+    if missing_ok:
+        return None
     token = input("Could not find configuration file. Please enter your token\n>>> ")
     token_file.write_text(token)
     return {"session": token}
