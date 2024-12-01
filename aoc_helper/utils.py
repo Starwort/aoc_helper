@@ -20,7 +20,6 @@ from aoc_helper.types import (
     HashableU,
     MultipliableT,
     MultipliableU,
-    SubtractableT,
     SupportsMean,
     SupportsProdNoDefaultT,
     SupportsRichComparison,
@@ -97,43 +96,37 @@ def extract_iranges(raw: str) -> "list[range]":
 @typing.overload
 def chunk(
     iterable: Iterable[T], chunk_size: typing.Literal[2]
-) -> "typing.Iterator[typing.Tuple[T, T]]":
-    ...
+) -> "typing.Iterator[typing.Tuple[T, T]]": ...
 
 
 @typing.overload
 def chunk(
     iterable: Iterable[T], chunk_size: typing.Literal[3]
-) -> "typing.Iterator[typing.Tuple[T, T, T]]":
-    ...
+) -> "typing.Iterator[typing.Tuple[T, T, T]]": ...
 
 
 @typing.overload
 def chunk(
     iterable: Iterable[T], chunk_size: typing.Literal[4]
-) -> "typing.Iterator[typing.Tuple[T, T, T, T]]":
-    ...
+) -> "typing.Iterator[typing.Tuple[T, T, T, T]]": ...
 
 
 @typing.overload
 def chunk(
     iterable: Iterable[T], chunk_size: typing.Literal[5]
-) -> "typing.Iterator[typing.Tuple[T, T, T, T, T]]":
-    ...
+) -> "typing.Iterator[typing.Tuple[T, T, T, T, T]]": ...
 
 
 @typing.overload
 def chunk(
     iterable: Iterable[T], chunk_size: typing.Literal[6]
-) -> "typing.Iterator[typing.Tuple[T, T, T, T, T, T]]":
-    ...
+) -> "typing.Iterator[typing.Tuple[T, T, T, T, T, T]]": ...
 
 
 @typing.overload
 def chunk(
     iterable: Iterable[T], chunk_size: int
-) -> "typing.Iterator[typing.Tuple[T, ...]]":
-    ...
+) -> "typing.Iterator[typing.Tuple[T, ...]]": ...
 
 
 def chunk(
@@ -150,43 +143,37 @@ def chunk(
 @typing.overload
 def chunk_default(
     iterable: Iterable[T], chunk_size: typing.Literal[2], default: T
-) -> "typing.Iterator[typing.Tuple[T, T]]":
-    ...
+) -> "typing.Iterator[typing.Tuple[T, T]]": ...
 
 
 @typing.overload
 def chunk_default(
     iterable: Iterable[T], chunk_size: typing.Literal[3], default: T
-) -> "typing.Iterator[typing.Tuple[T, T, T]]":
-    ...
+) -> "typing.Iterator[typing.Tuple[T, T, T]]": ...
 
 
 @typing.overload
 def chunk_default(
     iterable: Iterable[T], chunk_size: typing.Literal[4], default: T
-) -> "typing.Iterator[typing.Tuple[T, T, T, T]]":
-    ...
+) -> "typing.Iterator[typing.Tuple[T, T, T, T]]": ...
 
 
 @typing.overload
 def chunk_default(
     iterable: Iterable[T], chunk_size: typing.Literal[5], default: T
-) -> "typing.Iterator[typing.Tuple[T, T, T, T, T]]":
-    ...
+) -> "typing.Iterator[typing.Tuple[T, T, T, T, T]]": ...
 
 
 @typing.overload
 def chunk_default(
     iterable: Iterable[T], chunk_size: typing.Literal[6], default: T
-) -> "typing.Iterator[typing.Tuple[T, T, T, T, T, T]]":
-    ...
+) -> "typing.Iterator[typing.Tuple[T, T, T, T, T, T]]": ...
 
 
 @typing.overload
 def chunk_default(
     iterable: Iterable[T], chunk_size: int, default: T
-) -> "typing.Iterator[typing.Tuple[T, ...]]":
-    ...
+) -> "typing.Iterator[typing.Tuple[T, ...]]": ...
 
 
 def chunk_default(
@@ -276,7 +263,7 @@ class list(typing.Generic[T], UserList[T]):
         If no such element exists, return None.
         """
         if pred is None:
-            pred = lambda i: bool(i)
+            pred = bool
         elif not callable(pred):
             pred = (lambda j: lambda i: i == j)(pred)
         for i in self:
@@ -311,34 +298,32 @@ class list(typing.Generic[T], UserList[T]):
         return not any(pred(item) for item in self)
 
     @typing.overload
-    def windowed(self, window_size: typing.Literal[2]) -> "list[typing.Tuple[T, T]]":
-        ...
+    def windowed(
+        self, window_size: typing.Literal[2]
+    ) -> "list[typing.Tuple[T, T]]": ...
 
     @typing.overload
-    def windowed(self, window_size: typing.Literal[3]) -> "list[typing.Tuple[T, T, T]]":
-        ...
+    def windowed(
+        self, window_size: typing.Literal[3]
+    ) -> "list[typing.Tuple[T, T, T]]": ...
 
     @typing.overload
     def windowed(
         self, window_size: typing.Literal[4]
-    ) -> "list[typing.Tuple[T, T, T, T]]":
-        ...
+    ) -> "list[typing.Tuple[T, T, T, T]]": ...
 
     @typing.overload
     def windowed(
         self, window_size: typing.Literal[5]
-    ) -> "list[typing.Tuple[T, T, T, T, T]]":
-        ...
+    ) -> "list[typing.Tuple[T, T, T, T, T]]": ...
 
     @typing.overload
     def windowed(
         self, window_size: typing.Literal[6]
-    ) -> "list[typing.Tuple[T, T, T, T, T, T]]":
-        ...
+    ) -> "list[typing.Tuple[T, T, T, T, T, T]]": ...
 
     @typing.overload
-    def windowed(self, window_size: int) -> "list[typing.Tuple[T, ...]]":
-        ...
+    def windowed(self, window_size: int) -> "list[typing.Tuple[T, ...]]": ...
 
     def windowed(self, window_size):
         """Return an list containing the elements of this list in
@@ -355,12 +340,10 @@ class list(typing.Generic[T], UserList[T]):
         return iter(zip(self, self[shift:]))
 
     @typing.overload
-    def reduce(self, func: typing.Callable[[T, T], T]) -> T:
-        ...
+    def reduce(self, func: typing.Callable[[T, T], T]) -> T: ...
 
     @typing.overload
-    def reduce(self, func: typing.Callable[[U, T], U], initial: U) -> U:
-        ...
+    def reduce(self, func: typing.Callable[[U, T], U], initial: U) -> U: ...
 
     def reduce(self, func, initial=_SENTINEL):
         """Reduce the list to a single value, using the reduction
@@ -371,20 +354,20 @@ class list(typing.Generic[T], UserList[T]):
         return functools.reduce(func, self, initial)
 
     @typing.overload
-    def accumulated(self) -> "list[T]":
-        ...
+    def accumulated(self) -> "list[T]": ...
 
     @typing.overload
-    def accumulated(self, func: typing.Callable[[T, T], T]) -> "list[T]":
-        ...
+    def accumulated(self, func: typing.Callable[[T, T], T]) -> "list[T]": ...
 
     @typing.overload
-    def accumulated(self, func: typing.Callable[[T, T], T], initial: T) -> "list[T]":
-        ...
+    def accumulated(
+        self, func: typing.Callable[[T, T], T], initial: T
+    ) -> "list[T]": ...
 
     @typing.overload
-    def accumulated(self, func: typing.Callable[[U, T], U], initial: U) -> "list[U]":
-        ...
+    def accumulated(
+        self, func: typing.Callable[[U, T], U], initial: U
+    ) -> "list[U]": ...
 
     def accumulated(self, func=operator.add, initial=_SENTINEL):
         """Return the accumulated results of calling func on the elements in
@@ -397,28 +380,24 @@ class list(typing.Generic[T], UserList[T]):
         return list(itertools.accumulate(self, func, initial))  # type: ignore
 
     @typing.overload
-    def chunked(self, n: typing.Literal[2]) -> "list[typing.Tuple[T, T]]":
-        ...
+    def chunked(self, n: typing.Literal[2]) -> "list[typing.Tuple[T, T]]": ...
 
     @typing.overload
-    def chunked(self, n: typing.Literal[3]) -> "list[typing.Tuple[T, T, T]]":
-        ...
+    def chunked(self, n: typing.Literal[3]) -> "list[typing.Tuple[T, T, T]]": ...
 
     @typing.overload
-    def chunked(self, n: typing.Literal[4]) -> "list[typing.Tuple[T, T, T, T]]":
-        ...
+    def chunked(self, n: typing.Literal[4]) -> "list[typing.Tuple[T, T, T, T]]": ...
 
     @typing.overload
-    def chunked(self, n: typing.Literal[5]) -> "list[typing.Tuple[T, T, T, T, T]]":
-        ...
+    def chunked(self, n: typing.Literal[5]) -> "list[typing.Tuple[T, T, T, T, T]]": ...
 
     @typing.overload
-    def chunked(self, n: typing.Literal[6]) -> "list[typing.Tuple[T, T, T, T, T, T]]":
-        ...
+    def chunked(
+        self, n: typing.Literal[6]
+    ) -> "list[typing.Tuple[T, T, T, T, T, T]]": ...
 
     @typing.overload
-    def chunked(self, n: int) -> "list[typing.Tuple[T, ...]]":
-        ...
+    def chunked(self, n: int) -> "list[typing.Tuple[T, ...]]": ...
 
     def chunked(self, n):
         """Return a list containing the elements of this list in chunks
@@ -437,14 +416,12 @@ class list(typing.Generic[T], UserList[T]):
     @typing.overload
     def sum(
         self: "list[SupportsSumNoDefaultT]",
-    ) -> typing.Union[SupportsSumNoDefaultT, typing.Literal[0]]:
-        ...
+    ) -> typing.Union[SupportsSumNoDefaultT, typing.Literal[0]]: ...
 
     @typing.overload
     def sum(
         self: "list[AddableT]", initial: AddableU
-    ) -> typing.Union[AddableT, AddableU]:
-        ...
+    ) -> typing.Union[AddableT, AddableU]: ...
 
     def sum(self, initial=_SENTINEL):
         """Return the sum of all elements in this list.
@@ -459,14 +436,12 @@ class list(typing.Generic[T], UserList[T]):
     @typing.overload
     def prod(
         self: "list[SupportsProdNoDefaultT]",
-    ) -> typing.Union[T, typing.Literal[1]]:
-        ...
+    ) -> typing.Union[T, typing.Literal[1]]: ...
 
     @typing.overload
     def prod(
         self: "list[MultipliableT]", initial: MultipliableU
-    ) -> typing.Union[MultipliableT, MultipliableU]:
-        ...
+    ) -> typing.Union[MultipliableT, MultipliableU]: ...
 
     def prod(self, initial=_SENTINEL):
         """Return the product of all elements in this list.
@@ -485,16 +460,14 @@ class list(typing.Generic[T], UserList[T]):
         self: "list[SupportsRichComparisonT]",
         *,
         reverse: bool = False,
-    ) -> "list[SupportsRichComparisonT]":
-        ...
+    ) -> "list[SupportsRichComparisonT]": ...
 
     @typing.overload
     def sorted(
         self,
         key: typing.Callable[[T], SupportsRichComparison],
         reverse: bool = False,
-    ) -> "list[T]":
-        ...
+    ) -> "list[T]": ...
 
     def sorted(self, key=None, reverse=False):  # type: ignore
         """Return a list containing the elements of this list sorted
@@ -513,15 +486,13 @@ class list(typing.Generic[T], UserList[T]):
     @typing.overload
     def min(
         self: "list[SupportsRichComparisonT]",
-    ) -> T:
-        ...
+    ) -> T: ...
 
     @typing.overload
     def min(
         self,
         key: typing.Callable[[T], SupportsRichComparisonT],
-    ) -> T:
-        ...
+    ) -> T: ...
 
     def min(self, key=None) -> T:
         """Return the minimum element of this list, according to the given
@@ -532,15 +503,13 @@ class list(typing.Generic[T], UserList[T]):
     @typing.overload
     def max(
         self: "list[SupportsRichComparisonT]",
-    ) -> T:
-        ...
+    ) -> T: ...
 
     @typing.overload
     def max(
         self,
         key: typing.Callable[[T], SupportsRichComparisonT],
-    ) -> T:
-        ...
+    ) -> T: ...
 
     def max(self, key=None) -> T:
         """Return the maximum element of this list, according to the given
@@ -563,12 +532,10 @@ class list(typing.Generic[T], UserList[T]):
         return self.sum() / self.len()  # type: ignore
 
     @typing.overload
-    def median(self: "list[SupportsRichComparisonT]") -> T:
-        ...
+    def median(self: "list[SupportsRichComparisonT]") -> T: ...
 
     @typing.overload
-    def median(self, key: typing.Callable[[T], SupportsRichComparisonT]) -> T:
-        ...
+    def median(self, key: typing.Callable[[T], SupportsRichComparisonT]) -> T: ...
 
     def median(self, key=None) -> T:
         """Statistical median of this list.
@@ -600,22 +567,19 @@ class list(typing.Generic[T], UserList[T]):
         return list(i[0] for i in counted if i[1] == n_ties)
 
     @typing.overload
-    def flat(self: "list[Iterable[SpecialisationT]]") -> "list[SpecialisationT]":
-        ...
+    def flat(self: "list[Iterable[SpecialisationT]]") -> "list[SpecialisationT]": ...
 
     @typing.overload
     def flat(
         self: "list[Iterable[SpecialisationT]]",
         recursive: typing.Literal[False] = False,
-    ) -> "list[SpecialisationT]":
-        ...
+    ) -> "list[SpecialisationT]": ...
 
     @typing.overload
     def flat(
         self: "list[Iterable[MaybeIterator[SpecialisationT]]]",
         recursive: typing.Literal[True] = True,
-    ) -> "list[SpecialisationT]":
-        ...
+    ) -> "list[SpecialisationT]": ...
 
     def flat(self: "list[Iterable[typing.Any]]", recursive=False):  # type: ignore
         """Flattened version of this list.
@@ -631,9 +595,11 @@ class list(typing.Generic[T], UserList[T]):
             for subitem in (
                 item.tee(1)[0].flatten(True)  # type: ignore
                 if isinstance(item, iter)
-                else list(item).flat(True)  # type: ignore
-                if isinstance(item, (builtins.list, list))
-                else [item]
+                else (
+                    list(item).flat(True)  # type: ignore
+                    if isinstance(item, (builtins.list, list))
+                    else [item]
+                )
             )
         )
 
@@ -652,7 +618,7 @@ class list(typing.Generic[T], UserList[T]):
         return list(nsmallest(n, self))
 
     def transposition(
-        self: "list[list[SpecialisationT]]",
+        self: "typing.Union[list[list[SpecialisationT]], list[Iterable[SpecialisationT]], list[typing.Tuple[SpecialisationT, ...]]]",
     ) -> "list[list[SpecialisationT]]":
         """Return the transposition of this list, which is assumed to be
         rectangular, not ragged. If this list was ragged, then it will be
@@ -807,7 +773,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         If no such element exists, return None.
         """
         if pred is None:
-            pred = lambda i: bool(i)
+            pred = bool
         elif not callable(pred):
             pred = (lambda j: lambda i: i == j)(pred)
         for i in self:
@@ -848,12 +814,10 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         return not any(pred(item) for item in self)
 
     @typing.overload
-    def reduce(self, func: typing.Callable[[T_Co, T_Co], T_Co]) -> T_Co:
-        ...
+    def reduce(self, func: typing.Callable[[T_Co, T_Co], T_Co]) -> T_Co: ...
 
     @typing.overload
-    def reduce(self, func: typing.Callable[[U, T_Co], U], initial: U) -> U:
-        ...
+    def reduce(self, func: typing.Callable[[U, T_Co], U], initial: U) -> U: ...
 
     def reduce(self, func, initial=_SENTINEL):
         """Reduce the iterator to a single value, using the reduction
@@ -864,24 +828,22 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         return functools.reduce(func, self, initial)
 
     @typing.overload
-    def accumulate(self) -> "iter[T_Co]":
-        ...
+    def accumulate(self) -> "iter[T_Co]": ...
 
     @typing.overload
-    def accumulate(self, func: typing.Callable[[T_Co, T_Co], T_Co]) -> "iter[T_Co]":
-        ...
+    def accumulate(self, func: typing.Callable[[T_Co, T_Co], T_Co]) -> "iter[T_Co]": ...
 
     @typing.overload
     def accumulate(
         self,
         func: typing.Callable[[T_Co, T_Co], T_Co],
         initial: T_Co,  # type: ignore
-    ) -> "iter[T_Co]":
-        ...
+    ) -> "iter[T_Co]": ...
 
     @typing.overload
-    def accumulate(self, func: typing.Callable[[U, T_Co], U], initial: U) -> "iter[U]":
-        ...
+    def accumulate(
+        self, func: typing.Callable[[U, T_Co], U], initial: U
+    ) -> "iter[U]": ...
 
     def accumulate(self, func=operator.add, initial=_SENTINEL):
         """Return the accumulated results of calling func on the elements in
@@ -899,34 +861,28 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
             func(el)
 
     @typing.overload
-    def chunk(self, n: typing.Literal[2]) -> "iter[typing.Tuple[T_Co, T_Co]]":
-        ...
+    def chunk(self, n: typing.Literal[2]) -> "iter[typing.Tuple[T_Co, T_Co]]": ...
 
     @typing.overload
-    def chunk(self, n: typing.Literal[3]) -> "iter[typing.Tuple[T_Co, T_Co, T_Co]]":
-        ...
+    def chunk(self, n: typing.Literal[3]) -> "iter[typing.Tuple[T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
     def chunk(
         self, n: typing.Literal[4]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co]]":
-        ...
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
     def chunk(
         self, n: typing.Literal[5]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co]]":
-        ...
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
     def chunk(
         self, n: typing.Literal[6]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co, T_Co]]":
-        ...
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
-    def chunk(self, n: int) -> "iter[typing.Tuple[T_Co, ...]]":
-        ...
+    def chunk(self, n: int) -> "iter[typing.Tuple[T_Co, ...]]": ...
 
     def chunk(self, n):
         """Return an iterator containing the elements of this iterator in chunks
@@ -962,36 +918,30 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
     @typing.overload
     def window(
         self, window_size: typing.Literal[2]
-    ) -> "iter[typing.Tuple[T_Co, T_Co]]":
-        ...
+    ) -> "iter[typing.Tuple[T_Co, T_Co]]": ...
 
     @typing.overload
     def window(
         self, window_size: typing.Literal[3]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co]]":
-        ...
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
     def window(
         self, window_size: typing.Literal[4]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co]]":
-        ...
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
     def window(
         self, window_size: typing.Literal[5]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co]]":
-        ...
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
     def window(
         self, window_size: typing.Literal[6]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co, T_Co]]":
-        ...
+    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
-    def window(self, window_size: int) -> "iter[typing.Tuple[T_Co, ...]]":
-        ...
+    def window(self, window_size: int) -> "iter[typing.Tuple[T_Co, ...]]": ...
 
     def window(self, window_size):
         """Return an iterator containing the elements of this iterator in
@@ -1016,8 +966,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         ...
 
     @typing.overload
-    def next_or(self, default: U) -> typing.Union[T_Co, U]:
-        ...
+    def next_or(self, default: U) -> typing.Union[T_Co, U]: ...
 
     def next_or(self, default):
         """Return the next element in the iterator, or default."""
@@ -1052,8 +1001,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         return tuple(self.next() for _ in builtins.range(n))
 
     @typing.overload
-    def collect(self) -> list[T_Co]:
-        ...
+    def collect(self) -> list[T_Co]: ...
 
     @typing.overload  # TODO: why doesn't this work?
     def collect(self, collection_type: typing.Type[U]) -> "U[T_Co]":  # type: ignore
@@ -1074,14 +1022,12 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
     @typing.overload
     def sum(
         self: "iter[SupportsSumNoDefaultT]",
-    ) -> typing.Union[SupportsSumNoDefaultT, typing.Literal[0]]:
-        ...
+    ) -> typing.Union[SupportsSumNoDefaultT, typing.Literal[0]]: ...
 
     @typing.overload
     def sum(
         self: "iter[AddableT]", initial: AddableU
-    ) -> typing.Union[AddableT, AddableU]:
-        ...
+    ) -> typing.Union[AddableT, AddableU]: ...
 
     def sum(self, initial=_SENTINEL):
         """Return the sum of all elements in this iterator.
@@ -1097,14 +1043,12 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
     @typing.overload
     def prod(
         self: "iter[SupportsProdNoDefaultT]",
-    ) -> typing.Union[T_Co, typing.Literal[1]]:
-        ...
+    ) -> typing.Union[T_Co, typing.Literal[1]]: ...
 
     @typing.overload
     def prod(
         self: "iter[MultipliableT]", initial: MultipliableU
-    ) -> typing.Union[MultipliableT, MultipliableU]:
-        ...
+    ) -> typing.Union[MultipliableT, MultipliableU]: ...
 
     def prod(self, initial=_SENTINEL):
         """Return the product of all elements in this iterator.
@@ -1122,16 +1066,14 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         self: "iter[SupportsRichComparisonT]",
         *,
         reverse: bool = False,
-    ) -> "list[SupportsRichComparisonT]":
-        ...
+    ) -> "list[SupportsRichComparisonT]": ...
 
     @typing.overload
     def sorted(
         self,
         key: typing.Callable[[T_Co], SupportsRichComparison],
         reverse: bool = False,
-    ) -> "list[T_Co]":
-        ...
+    ) -> "list[T_Co]": ...
 
     def sorted(self, key=None, reverse=False):  # type: ignore
         """Return a list containing the elements of this iterator sorted
@@ -1149,15 +1091,13 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
     @typing.overload
     def min(
         self: "iter[SupportsRichComparisonT]",
-    ) -> T_Co:
-        ...
+    ) -> T_Co: ...
 
     @typing.overload
     def min(
         self,
         key: typing.Callable[[T_Co], SupportsRichComparisonT],
-    ) -> T_Co:
-        ...
+    ) -> T_Co: ...
 
     def min(self, key=None) -> T_Co:
         """Return the minimum element of this iterator, according to the given
@@ -1168,15 +1108,13 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
     @typing.overload
     def max(
         self: "iter[SupportsRichComparisonT]",
-    ) -> T_Co:
-        ...
+    ) -> T_Co: ...
 
     @typing.overload
     def max(
         self,
         key: typing.Callable[[T_Co], SupportsRichComparisonT],
-    ) -> T_Co:
-        ...
+    ) -> T_Co: ...
 
     def max(self, key=None) -> T_Co:
         """Return the maximum element of this iterator, according to the given
@@ -1217,22 +1155,19 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
     @typing.overload
     def flatten(
         self: "iter[Iterable[SpecialisationT]]",
-    ) -> "iter[SpecialisationT]":
-        ...
+    ) -> "iter[SpecialisationT]": ...
 
     @typing.overload
     def flatten(
         self: "iter[Iterable[SpecialisationT]]",
         recursive: typing.Literal[False] = False,
-    ) -> "iter[SpecialisationT]":
-        ...
+    ) -> "iter[SpecialisationT]": ...
 
     @typing.overload
     def flatten(
         self: "iter[Iterable[MaybeIterator[SpecialisationT]]]",
         recursive: typing.Literal[True] = True,
-    ) -> "iter[SpecialisationT]":
-        ...
+    ) -> "iter[SpecialisationT]": ...
 
     def flatten(
         self: "iter[Iterable[MaybeIterator[SpecialisationT]]]",
@@ -1251,9 +1186,11 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
             for item in (
                 iterator.flatten(True)  # type: ignore
                 if isinstance(iterator, iter)
-                else list(iterator).flat(True)  # type: ignore
-                if isinstance(iterator, (builtins.list, list))
-                else [iterator]
+                else (
+                    list(iterator).flat(True)  # type: ignore
+                    if isinstance(iterator, (builtins.list, list))
+                    else [iterator]
+                )
             )
         )
 
@@ -2292,6 +2229,27 @@ class PrioQueue(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
 
     def __repr__(self) -> str:
         return f"PrioQueue({self._data})"
+
+
+def rsearch(
+    pattern: typing.Union[str, typing.Pattern[str]],
+    text: str,
+) -> typing.Optional[typing.Match]:
+    """
+    Search for the rightmost occurrence of a pattern in a string.
+
+    This is *not* the same as re.findall(pattern, text)[-1], as that will not
+    detect the rightmost match if it overlaps with a previous match.
+
+    Be aware that this function is not very efficient, and so should not be
+    used with complex patterns.
+    """
+    start = len(text) - 1
+    match = None
+    while match is None and start >= 0:
+        match = re.match(pattern, text[start:])
+        start -= 1
+    return match
 
 
 def search(
