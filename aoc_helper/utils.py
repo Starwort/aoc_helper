@@ -617,9 +617,29 @@ class list(typing.Generic[T], UserList[T]):
         """Return the n smallest elements of self."""
         return list(nsmallest(n, self))
 
+    @typing.overload
     def transposition(
-        self: "typing.Union[list[list[SpecialisationT]], list[Iterable[SpecialisationT]], list[typing.Tuple[SpecialisationT, ...]]]",
-    ) -> "list[list[SpecialisationT]]":
+        self: "list[list[SpecialisationT]]",
+    ) -> "list[list[SpecialisationT]]": ...
+
+    @typing.overload
+    def transposition(
+        self: "list[Iterable[SpecialisationT]]",
+    ) -> "list[list[SpecialisationT]]": ...
+
+    @typing.overload
+    def transposition(
+        self: "list[typing.Tuple[SpecialisationT, ...]]",
+    ) -> "list[list[SpecialisationT]]": ...
+
+    @typing.overload
+    def transposition(
+        self: "list[typing.List[SpecialisationT]]",
+    ) -> "list[list[SpecialisationT]]": ...
+
+    def transposition(
+        self,
+    ):
         """Return the transposition of this list, which is assumed to be
         rectangular, not ragged. If this list was ragged, then it will be
         cropped to the largest rectangle that is fully populated.
