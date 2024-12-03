@@ -354,29 +354,24 @@ def visualise_cache(
             )
 
         def rule(title: str):
-            width = 73 - 4 - len(title)
+            width = 73 - 2 - len(title)
             left = width // 2
             right = width - left
-            print(f" {'-' * left} {title} {'-' * right}")
+            print(f"{'=' * left} {title} {'=' * right}")
 
         real_width = 73
     else:
         terminal = Console()
+        if colour == "auto":
+            colour = "always" if terminal.is_terminal else "never"
+        if colour == "never":
+            terminal.no_color = True
+        else:
+            Console._environ["FORCE_COLOR"] = "1"  # type: ignore
+
         real_width = terminal.width if terminal.is_terminal else 73
         terminal.width = 73
-        if colour != "never":
-            if colour == "auto":
-                colour = "always" if terminal.is_terminal else "never"
-            if colour == "always":
-                Console._environ["FORCE_COLOR"] = "1"  # type: ignore
-            rule = terminal.rule
-        else:
-
-            def rule(title: str):
-                width = 73 - 2 - len(title)
-                left = width // 2
-                right = width - left
-                print(f"{'=' * left} {title} {'=' * right}")
+        rule = terminal.rule
 
     if colour == "always":
         from .formatting import GREEN, RED, RESET, YELLOW

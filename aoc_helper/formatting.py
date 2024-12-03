@@ -1,6 +1,7 @@
 import builtins
 import time
 import typing
+from builtins import print as print_raw
 
 T = typing.TypeVar("T")
 U = typing.TypeVar("U")
@@ -8,7 +9,7 @@ U = typing.TypeVar("U")
 try:
     from rich import print, progress
 except ImportError:
-    from builtins import print  # suppress a Pylance warning
+    print = print_raw  # suppress a Pylance warning
 
     RED = ""
     YELLOW = ""
@@ -56,4 +57,15 @@ else:
 
     work = _rich_work
 
-__all__ = ("RED", "YELLOW", "GREEN", "BLUE", "GOLD", "RESET", "wait", "work", "print")
+__all__ = (
+    "RED",
+    "YELLOW",
+    "GREEN",
+    "BLUE",
+    "GOLD",
+    "RESET",
+    "wait",
+    "work",
+    "print",
+    "print_raw",
+)

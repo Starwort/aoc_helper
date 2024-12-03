@@ -21,7 +21,18 @@ from .data import (
     WAIT_TIME,
     get_cookie,
 )
-from .formatting import BLUE, GOLD, GREEN, RED, RESET, YELLOW, print, wait, work
+from .formatting import (
+    BLUE,
+    GOLD,
+    GREEN,
+    RED,
+    RESET,
+    YELLOW,
+    print,
+    print_raw,
+    wait,
+    work,
+)
 
 T = typing.TypeVar("T")
 U = typing.TypeVar("U")
@@ -145,7 +156,7 @@ def fetch(day: int = TODAY, year: int = DEFAULT_YEAR, never_print: bool = False)
         data = resp.text.strip("\n")
         input_path.write_text(data)
         if not never_print:
-            print(data)
+            print_raw(data)
         return data
 
 
