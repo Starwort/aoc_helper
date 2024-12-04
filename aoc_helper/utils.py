@@ -2230,6 +2230,22 @@ class SparseGrid(typing.Generic[T]):
                 clamp(y - x, -max(abs(x), abs(y)), max(abs(x), abs(y))),
             ] = value
         return out
+    
+    def rotations(self) -> "list[SparseGrid[T]]":
+        """Return a list of all 45° rotations of the grid."""
+        out = list()
+        for _ in range(8):
+            self = self.rotate_45_clockwise()
+            out.append(self)
+        return out
+    
+    def cardinal_rotations(self) -> "list[SparseGrid[T]]":
+        """Return a list of all 90° rotations of the grid."""
+        out = list()
+        for _ in range(4):
+            self = self.rotate_45_clockwise().rotate_45_clockwise()
+            out.append(self)
+        return out
 
     def draw_line(
         self,
