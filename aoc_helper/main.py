@@ -37,7 +37,7 @@ TEMPLATE = (pathlib.Path(__file__).parent / "day_template.py").read_text()
 RANGE_REGEX = re.compile(r"(2[0-5]|1[0-9]|0?[1-9])-(2[0-5]|1[0-9]|0?[2-9])")
 
 
-def parse_range(_, __, value: str) -> typing.List[int]:
+def parse_range(_, __, value: str) -> list[int]:
     ranges = value.split(",")
     days: set[int] = set()
     for range_ in ranges:
@@ -233,7 +233,7 @@ def submit(
 @cli.command(aliases=["t", "create"])
 @click.argument("days", callback=parse_range)
 @click.option("--year", type=int, default=DEFAULT_YEAR)
-def template(days: typing.List[int], year: int):
+def template(days: list[int], year: int):
     """Generate an answer stub for every day of DAYS in --year"""
     for day in days:
         print(f"Generating day_{day:0>2}.py")
@@ -278,7 +278,7 @@ def browser(state: typing.Optional[bool]):
     help="What to delete",
     default="input",
 )
-def clean(days: typing.List[int], year: int, type: str):
+def clean(days: list[int], year: int, type: str):
     """Clean the cached --type data for DAYS of YEAR"""
     for day in days:
         if type in ("input", "all"):
@@ -492,7 +492,7 @@ def practice_results(day: int, year: int):
         print("No practice results found")
         return
 
-    def format_result(result: typing.Optional[typing.Tuple[int, int, int]]):
+    def format_result(result: typing.Optional[tuple[int, int, int]]):
         if not result:
             return "no rank"
         estimated, best, worst = result
@@ -505,7 +505,7 @@ def practice_results(day: int, year: int):
     for file in sorted(folder.iterdir()):
         attempt_year, attempt_month, attempt_day = map(int, file.stem.split("-"))
         attempt_date = date(attempt_year, attempt_month, attempt_day).strftime("%x")
-        results: typing.List[float] = json.loads(file.read_text())
+        results: list[float] = json.loads(file.read_text())
         if len(results) == 1:
             solve_time = timedelta(seconds=results[0])
             result = format_result(_estimate_practice_rank(day, 1, year, solve_time))

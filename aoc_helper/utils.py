@@ -37,7 +37,7 @@ P = ParamSpec("P")
 
 
 Iterable = typing.Union["iter[T]", typing.Iterable[T]]
-AnyIterable = typing.Union[Iterable[T], typing.List[T], typing.Tuple[T, ...], "list[T]"]
+AnyIterable = typing.Union[Iterable[T], builtins.list[T], tuple[T, ...], "list[T]"]
 MaybeIterator = typing.Union[T, Iterable["MaybeIterator[T]"]]
 
 
@@ -59,14 +59,14 @@ def extract_uints(raw: str) -> "list[int]":
     return list(map(int, re.findall(r"(\d+)", raw)))
 
 
-def _range_from_match(match: typing.Tuple[str, str]) -> "range":
+def _range_from_match(match: tuple[str, str]) -> "range":
     if match[1]:
         return range(int(match[0]), int(match[1]))
     else:
         return range(int(match[0]), int(match[0]))
 
 
-def _irange_from_match(match: typing.Tuple[str, str]) -> "range":
+def _irange_from_match(match: tuple[str, str]) -> "range":
     if match[1]:
         return range(int(match[0]), int(match[1]) + 1)
     else:
@@ -96,42 +96,40 @@ def extract_iranges(raw: str) -> "list[range]":
 @typing.overload
 def chunk(
     iterable: Iterable[T], chunk_size: typing.Literal[2]
-) -> "typing.Iterator[typing.Tuple[T, T]]": ...
+) -> "typing.Iterator[tuple[T, T]]": ...
 
 
 @typing.overload
 def chunk(
     iterable: Iterable[T], chunk_size: typing.Literal[3]
-) -> "typing.Iterator[typing.Tuple[T, T, T]]": ...
+) -> "typing.Iterator[tuple[T, T, T]]": ...
 
 
 @typing.overload
 def chunk(
     iterable: Iterable[T], chunk_size: typing.Literal[4]
-) -> "typing.Iterator[typing.Tuple[T, T, T, T]]": ...
+) -> "typing.Iterator[tuple[T, T, T, T]]": ...
 
 
 @typing.overload
 def chunk(
     iterable: Iterable[T], chunk_size: typing.Literal[5]
-) -> "typing.Iterator[typing.Tuple[T, T, T, T, T]]": ...
+) -> "typing.Iterator[tuple[T, T, T, T, T]]": ...
 
 
 @typing.overload
 def chunk(
     iterable: Iterable[T], chunk_size: typing.Literal[6]
-) -> "typing.Iterator[typing.Tuple[T, T, T, T, T, T]]": ...
+) -> "typing.Iterator[tuple[T, T, T, T, T, T]]": ...
 
 
 @typing.overload
 def chunk(
     iterable: Iterable[T], chunk_size: int
-) -> "typing.Iterator[typing.Tuple[T, ...]]": ...
+) -> "typing.Iterator[tuple[T, ...]]": ...
 
 
-def chunk(
-    iterable: Iterable[T], chunk_size: int
-) -> "typing.Iterator[typing.Tuple[T, ...]]":
+def chunk(iterable: Iterable[T], chunk_size: int) -> "typing.Iterator[tuple[T, ...]]":
     """Utility function to chunk an iterable into chunks of a given size.
 
     If there are not enough elements in the iterable to fill the last chunk,
@@ -143,37 +141,37 @@ def chunk(
 @typing.overload
 def chunk_default(
     iterable: Iterable[T], chunk_size: typing.Literal[2], default: T
-) -> "typing.Iterator[typing.Tuple[T, T]]": ...
+) -> "typing.Iterator[tuple[T, T]]": ...
 
 
 @typing.overload
 def chunk_default(
     iterable: Iterable[T], chunk_size: typing.Literal[3], default: T
-) -> "typing.Iterator[typing.Tuple[T, T, T]]": ...
+) -> "typing.Iterator[tuple[T, T, T]]": ...
 
 
 @typing.overload
 def chunk_default(
     iterable: Iterable[T], chunk_size: typing.Literal[4], default: T
-) -> "typing.Iterator[typing.Tuple[T, T, T, T]]": ...
+) -> "typing.Iterator[tuple[T, T, T, T]]": ...
 
 
 @typing.overload
 def chunk_default(
     iterable: Iterable[T], chunk_size: typing.Literal[5], default: T
-) -> "typing.Iterator[typing.Tuple[T, T, T, T, T]]": ...
+) -> "typing.Iterator[tuple[T, T, T, T, T]]": ...
 
 
 @typing.overload
 def chunk_default(
     iterable: Iterable[T], chunk_size: typing.Literal[6], default: T
-) -> "typing.Iterator[typing.Tuple[T, T, T, T, T, T]]": ...
+) -> "typing.Iterator[tuple[T, T, T, T, T, T]]": ...
 
 
 @typing.overload
 def chunk_default(
     iterable: Iterable[T], chunk_size: int, default: T
-) -> "typing.Iterator[typing.Tuple[T, ...]]": ...
+) -> "typing.Iterator[tuple[T, ...]]": ...
 
 
 def chunk_default(
@@ -205,7 +203,7 @@ class list(typing.Generic[T], UserList[T]):
         return list(map(func, self))
 
     def starmapped(
-        self: typing.Union["list[AnyIterable[Ts]]", "list[typing.Tuple[Unpack[Ts]]]"],
+        self: typing.Union["list[AnyIterable[Ts]]", "list[tuple[Unpack[Ts]]]"],
         func: typing.Callable[[Unpack[Ts]], U],
     ) -> "list[U]":
         """Return a list containing the result of calling func on each
@@ -225,7 +223,7 @@ class list(typing.Generic[T], UserList[T]):
     def starmapped_each(
         self: typing.Union[
             "list[AnyIterable[AnyIterable[Ts]]]",
-            "list[AnyIterable[typing.Tuple[Unpack[Ts]]]]",
+            "list[AnyIterable[tuple[Unpack[Ts]]]]",
         ],
         func: typing.Callable[[Unpack[Ts]], U],
     ) -> "list[list[U]]":
@@ -298,32 +296,26 @@ class list(typing.Generic[T], UserList[T]):
         return not any(pred(item) for item in self)
 
     @typing.overload
-    def windowed(
-        self, window_size: typing.Literal[2]
-    ) -> "list[typing.Tuple[T, T]]": ...
+    def windowed(self, window_size: typing.Literal[2]) -> "list[tuple[T, T]]": ...
 
     @typing.overload
-    def windowed(
-        self, window_size: typing.Literal[3]
-    ) -> "list[typing.Tuple[T, T, T]]": ...
+    def windowed(self, window_size: typing.Literal[3]) -> "list[tuple[T, T, T]]": ...
 
     @typing.overload
-    def windowed(
-        self, window_size: typing.Literal[4]
-    ) -> "list[typing.Tuple[T, T, T, T]]": ...
+    def windowed(self, window_size: typing.Literal[4]) -> "list[tuple[T, T, T, T]]": ...
 
     @typing.overload
     def windowed(
         self, window_size: typing.Literal[5]
-    ) -> "list[typing.Tuple[T, T, T, T, T]]": ...
+    ) -> "list[tuple[T, T, T, T, T]]": ...
 
     @typing.overload
     def windowed(
         self, window_size: typing.Literal[6]
-    ) -> "list[typing.Tuple[T, T, T, T, T, T]]": ...
+    ) -> "list[tuple[T, T, T, T, T, T]]": ...
 
     @typing.overload
-    def windowed(self, window_size: int) -> "list[typing.Tuple[T, ...]]": ...
+    def windowed(self, window_size: int) -> "list[tuple[T, ...]]": ...
 
     def windowed(self, window_size):
         """Return an list containing the elements of this list in
@@ -332,7 +324,7 @@ class list(typing.Generic[T], UserList[T]):
         """
         return list(self.iter().window(window_size))
 
-    def shifted_zip(self, shift: int = 1) -> "iter[typing.Tuple[T, T]]":
+    def shifted_zip(self, shift: int = 1) -> "iter[tuple[T, T]]":
         """Return an iterator containing pairs of elements separated by shift.
 
         If there are fewer than shift elements, the iterator will be empty.
@@ -380,24 +372,22 @@ class list(typing.Generic[T], UserList[T]):
         return list(itertools.accumulate(self, func, initial))  # type: ignore
 
     @typing.overload
-    def chunked(self, n: typing.Literal[2]) -> "list[typing.Tuple[T, T]]": ...
+    def chunked(self, n: typing.Literal[2]) -> "list[tuple[T, T]]": ...
 
     @typing.overload
-    def chunked(self, n: typing.Literal[3]) -> "list[typing.Tuple[T, T, T]]": ...
+    def chunked(self, n: typing.Literal[3]) -> "list[tuple[T, T, T]]": ...
 
     @typing.overload
-    def chunked(self, n: typing.Literal[4]) -> "list[typing.Tuple[T, T, T, T]]": ...
+    def chunked(self, n: typing.Literal[4]) -> "list[tuple[T, T, T, T]]": ...
 
     @typing.overload
-    def chunked(self, n: typing.Literal[5]) -> "list[typing.Tuple[T, T, T, T, T]]": ...
+    def chunked(self, n: typing.Literal[5]) -> "list[tuple[T, T, T, T, T]]": ...
 
     @typing.overload
-    def chunked(
-        self, n: typing.Literal[6]
-    ) -> "list[typing.Tuple[T, T, T, T, T, T]]": ...
+    def chunked(self, n: typing.Literal[6]) -> "list[tuple[T, T, T, T, T, T]]": ...
 
     @typing.overload
-    def chunked(self, n: int) -> "list[typing.Tuple[T, ...]]": ...
+    def chunked(self, n: int) -> "list[tuple[T, ...]]": ...
 
     def chunked(self, n):
         """Return a list containing the elements of this list in chunks
@@ -406,7 +396,7 @@ class list(typing.Generic[T], UserList[T]):
         """
         return list(chunk(self, n))
 
-    def chunked_default(self, n: int, default: T) -> "list[typing.Tuple[T, ...]]":
+    def chunked_default(self, n: int, default: T) -> "list[tuple[T, ...]]":
         """Return a list containing the elements of this list in chunks
         of size n. If there are not enough elements to fill the last chunk, the
         missing elements will be replaced with the default value.
@@ -474,7 +464,7 @@ class list(typing.Generic[T], UserList[T]):
         according to the given key and reverse parameters.
         """
         # I hate working with specialisations I should have just written a pyi
-        result: typing.List[T] = sorted(self, key=key, reverse=reverse)  # type: ignore
+        result: builtins.list[T] = sorted(self, key=key, reverse=reverse)  # type: ignore
         return list(result)
 
     def reversed(self) -> "list[T]":
@@ -603,7 +593,7 @@ class list(typing.Generic[T], UserList[T]):
             )
         )
 
-    def enumerated(self, start: int = 0) -> "list[typing.Tuple[int, T]]":
+    def enumerated(self, start: int = 0) -> "list[tuple[int, T]]":
         return list(enumerate(self, start))
 
     def deepcopy(self) -> "list[T]":
@@ -629,12 +619,12 @@ class list(typing.Generic[T], UserList[T]):
 
     @typing.overload
     def transposition(
-        self: "list[typing.Tuple[SpecialisationT, ...]]",
+        self: "list[tuple[SpecialisationT, ...]]",
     ) -> "list[list[SpecialisationT]]": ...
 
     @typing.overload
     def transposition(
-        self: "list[typing.List[SpecialisationT]]",
+        self: "list[builtins.list[SpecialisationT]]",
     ) -> "list[list[SpecialisationT]]": ...
 
     def transposition(
@@ -676,7 +666,7 @@ class list(typing.Generic[T], UserList[T]):
         """
         return PrioQueue(self.into_builtin())
 
-    def into_builtin(self) -> typing.List[T]:
+    def into_builtin(self) -> builtins.list[T]:
         """Unwrap this list into a builtins.list.
 
         This function converts directly; it doesn't copy - expect strange
@@ -684,21 +674,19 @@ class list(typing.Generic[T], UserList[T]):
         """
         return self.data
 
-    def combinations(self, r: int) -> "list[typing.Tuple[T, ...]]":
+    def combinations(self, r: int) -> "list[tuple[T, ...]]":
         """Return a list over the combinations, without replacement, of
         length r of the elements of this list.
         """
         return list(itertools.combinations(self, r))
 
-    def combinations_with_replacement(self, r: int) -> "list[typing.Tuple[T, ...]]":
+    def combinations_with_replacement(self, r: int) -> "list[tuple[T, ...]]":
         """Return a list over the combinations, with replacement, of
         length r of the elements of this list.
         """
         return list(itertools.combinations_with_replacement(self, r))
 
-    def permutations(
-        self, r: typing.Union[int, None] = None
-    ) -> "list[typing.Tuple[T, ...]]":
+    def permutations(self, r: typing.Union[int, None] = None) -> "list[tuple[T, ...]]":
         """Return a list over the permutations of the elements of this
         list.
 
@@ -738,7 +726,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         return iter(map(func, self))
 
     def starmap(
-        self: typing.Union["iter[Iterable[Ts]]", "iter[typing.Tuple[Unpack[Ts]]]"],
+        self: typing.Union["iter[Iterable[Ts]]", "iter[tuple[Unpack[Ts]]]"],
         func: typing.Callable[[Unpack[Ts]], U],
     ) -> "iter[U]":
         """Return an iterator containing the result of calling func on each
@@ -758,7 +746,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
     def starmap_each(
         self: typing.Union[
             "iter[Iterable[AnyIterable[Ts]]]",
-            "iter[Iterable[typing.Tuple[Unpack[Ts]]]]",
+            "iter[Iterable[tuple[Unpack[Ts]]]]",
         ],
         func: typing.Callable[[Unpack[Ts]], U],
     ) -> "iter[iter[U]]":
@@ -881,28 +869,26 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
             func(el)
 
     @typing.overload
-    def chunk(self, n: typing.Literal[2]) -> "iter[typing.Tuple[T_Co, T_Co]]": ...
+    def chunk(self, n: typing.Literal[2]) -> "iter[tuple[T_Co, T_Co]]": ...
 
     @typing.overload
-    def chunk(self, n: typing.Literal[3]) -> "iter[typing.Tuple[T_Co, T_Co, T_Co]]": ...
+    def chunk(self, n: typing.Literal[3]) -> "iter[tuple[T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
-    def chunk(
-        self, n: typing.Literal[4]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co]]": ...
+    def chunk(self, n: typing.Literal[4]) -> "iter[tuple[T_Co, T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
     def chunk(
         self, n: typing.Literal[5]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co]]": ...
+    ) -> "iter[tuple[T_Co, T_Co, T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
     def chunk(
         self, n: typing.Literal[6]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co, T_Co]]": ...
+    ) -> "iter[tuple[T_Co, T_Co, T_Co, T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
-    def chunk(self, n: int) -> "iter[typing.Tuple[T_Co, ...]]": ...
+    def chunk(self, n: int) -> "iter[tuple[T_Co, ...]]": ...
 
     def chunk(self, n):
         """Return an iterator containing the elements of this iterator in chunks
@@ -911,7 +897,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         """
         return iter(chunk(self, n))
 
-    def chunk_default(self, n: int, default: T_Co) -> "iter[typing.Tuple[T_Co, ...]]":  # type: ignore
+    def chunk_default(self, n: int, default: T_Co) -> "iter[tuple[T_Co, ...]]":  # type: ignore
         """Return an iterator containing the elements of this iterator in chunks
         of size n. If there are not enough elements to fill the last chunk, the
         missing elements will be replaced with the default value.
@@ -920,7 +906,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
 
     def _window(
         self, window_size: int
-    ) -> typing.Generator[typing.Tuple[T_Co, ...], None, None]:
+    ) -> typing.Generator[tuple[T_Co, ...], None, None]:
         elements: typing.Deque[T_Co] = deque()
         for _ in range(window_size):
             try:
@@ -936,32 +922,30 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
             yield tuple(elements)
 
     @typing.overload
-    def window(
-        self, window_size: typing.Literal[2]
-    ) -> "iter[typing.Tuple[T_Co, T_Co]]": ...
+    def window(self, window_size: typing.Literal[2]) -> "iter[tuple[T_Co, T_Co]]": ...
 
     @typing.overload
     def window(
         self, window_size: typing.Literal[3]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co]]": ...
+    ) -> "iter[tuple[T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
     def window(
         self, window_size: typing.Literal[4]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co]]": ...
+    ) -> "iter[tuple[T_Co, T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
     def window(
         self, window_size: typing.Literal[5]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co]]": ...
+    ) -> "iter[tuple[T_Co, T_Co, T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
     def window(
         self, window_size: typing.Literal[6]
-    ) -> "iter[typing.Tuple[T_Co, T_Co, T_Co, T_Co, T_Co, T_Co]]": ...
+    ) -> "iter[tuple[T_Co, T_Co, T_Co, T_Co, T_Co, T_Co]]": ...
 
     @typing.overload
-    def window(self, window_size: int) -> "iter[typing.Tuple[T_Co, ...]]": ...
+    def window(self, window_size: int) -> "iter[tuple[T_Co, ...]]": ...
 
     def window(self, window_size):
         """Return an iterator containing the elements of this iterator in
@@ -970,7 +954,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         """
         return iter(self._window(window_size))
 
-    def shifted_zip(self, shift: int = 1) -> "iter[typing.Tuple[T_Co, T_Co]]":
+    def shifted_zip(self, shift: int = 1) -> "iter[tuple[T_Co, T_Co]]":
         """Return an iterator containing pairs of elements separated by shift.
 
         If there are fewer than shift elements, the iterator will be empty.
@@ -1013,7 +997,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         self.skip(n)
         return self.next()
 
-    def take(self, n: int) -> typing.Tuple[T_Co, ...]:
+    def take(self, n: int) -> tuple[T_Co, ...]:
         """Return the next n elements of this iterator.
 
         Raises StopIteration if there are not enough elements.
@@ -1099,7 +1083,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         """Return a list containing the elements of this iterator sorted
         according to the given key and reverse parameters.
         """
-        result: typing.List[T_Co] = sorted(self, key=key, reverse=reverse)  # type: ignore
+        result: builtins.list[T_Co] = sorted(self, key=key, reverse=reverse)  # type: ignore
         return list(result)
 
     def reversed(self) -> "iter[T_Co]":
@@ -1142,7 +1126,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         """
         return max(self, key=key)  # type: ignore
 
-    def tee(self, n: int = 2) -> typing.Tuple["iter[T_Co]", ...]:
+    def tee(self, n: int = 2) -> tuple["iter[T_Co]", ...]:
         """Return a tuple of n iterators containing the elements of this
         iterator.
         """
@@ -1151,7 +1135,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
 
     def permutations(
         self, r: typing.Union[int, None] = None
-    ) -> "iter[typing.Tuple[T_Co, ...]]":
+    ) -> "iter[tuple[T_Co, ...]]":
         """Return an iterator over the permutations of the elements of this
         iterator.
 
@@ -1160,13 +1144,13 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         """
         return iter(itertools.permutations(self, r))
 
-    def combinations(self, r: int) -> "iter[typing.Tuple[T_Co, ...]]":
+    def combinations(self, r: int) -> "iter[tuple[T_Co, ...]]":
         """Return an iterator over the combinations, without replacement, of
         length r of the elements of this iterator.
         """
         return iter(itertools.combinations(self, r))
 
-    def combinations_with_replacement(self, r: int) -> "iter[typing.Tuple[T_Co, ...]]":
+    def combinations_with_replacement(self, r: int) -> "iter[tuple[T_Co, ...]]":
         """Return an iterator over the combinations, with replacement, of
         length r of the elements of this iterator.
         """
@@ -1214,7 +1198,7 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
             )
         )
 
-    def enumerate(self, start: int = 0) -> "iter[typing.Tuple[int, T_Co]]":
+    def enumerate(self, start: int = 0) -> "iter[tuple[int, T_Co]]":
         """Return an iterator over the elements of this iterator, paired with
         their index, starting at start.
         """
@@ -1619,14 +1603,14 @@ def tail_call(func: typing.Callable[P, U]) -> typing.Callable[P, U]:
     return wrapped
 
 
-LetterRow = typing.Tuple[
+LetterRow = tuple[
     bool,
     bool,
     bool,
     bool,
     bool,
 ]
-Letter = typing.Tuple[
+Letter = tuple[
     LetterRow,
     LetterRow,
     LetterRow,
@@ -1657,7 +1641,7 @@ def encode_letter(dots: Letter) -> int:
     return out
 
 
-LETTERS: typing.Dict[int, str] = {
+LETTERS: dict[int, str] = {
     # todo: fill in this lookup table
     0: " ",
     10090902: "A",
@@ -1699,7 +1683,7 @@ def decode_letter(dots: Letter) -> str:
     return LETTERS[encoded]
 
 
-def decode_text(dots: typing.List[typing.List[bool]]) -> str:
+def decode_text(dots: builtins.list[builtins.list[bool]]) -> str:
     """Decode a matrix of dots to text.
 
     The matrix of dots should be 6 tall and 5n - 1 wide.
@@ -1736,6 +1720,56 @@ class Grid(typing.Generic[T]):
         map numbers from 0 to 9 to themselves, and . and # to 0 and 1 respectively.
         """
         return Grid(list(data.splitlines()).mapped(lambda i: list(i).mapped(classify)))
+
+    @property
+    def width(self) -> int:
+        """
+        Return the width of the grid. Will not be correct if the underlying
+        store is ragged.
+        """
+        return len(self.data[0])
+
+    @property
+    def height(self) -> int:
+        """Return the height of the grid."""
+        return len(self.data)
+
+    def find_all(self, other: "SparseGrid[T]") -> iter[tuple[int, int]]:
+        """Find all occurrences of other in self."""
+
+        def find():
+            for y, row in enumerate(self.data):
+                for x, _ in enumerate(row):
+                    if self.contains_at(
+                        x,
+                        y,
+                        other,
+                    ):
+                        yield (x, y)
+
+        return iter(find())
+
+    def contains_at(self, x: int, y: int, other: "SparseGrid[T]") -> bool:
+        """Check if other is contained at the given position in self."""
+        sentinel = object()
+        for (ox, oy), value in other.items():
+            if self.get(x + ox, y + oy, sentinel) != value:
+                return False
+        return True
+
+    def get(self, x: int, y: int, default: U = None) -> typing.Union[T, U]:
+        """Get the value at the given position in the grid."""
+        if 0 <= y < len(self.data) and 0 <= x < len(self.data[y]):
+            return self.data[y][x]
+        return default
+
+    def to_sparse(self, default_factory: typing.Callable[[], T]) -> "SparseGrid[T]":
+        """Convert this grid to a sparse grid."""
+        out = SparseGrid(default_factory)
+        for y, row in enumerate(self.data):
+            for x, value in enumerate(row):
+                out[x, y] = value
+        return out
 
     def vertical_chunks(self, n: int) -> list["Grid[T]"]:
         """Create a list of grids formed by splitting this grid every n rows.
@@ -1852,9 +1886,7 @@ class Grid(typing.Generic[T]):
         right = expect(trim_cols[::-1].find(lambda i: not i[1]))[0]
         return Grid(self.data[top : bottom + 1].mapped(lambda i: i[left : right + 1]))
 
-    def neighbours(
-        self, x: int, y: int
-    ) -> list[typing.Tuple[typing.Tuple[int, int], T]]:
+    def neighbours(self, x: int, y: int) -> list[tuple[tuple[int, int], T]]:
         """Return the neighbours of a point in the grid (but not the point itself).
 
         Examples below:
@@ -1882,9 +1914,7 @@ class Grid(typing.Generic[T]):
             .flatten(False)
         ).collect()
 
-    def orthogonal_neighbours(
-        self, x: int, y: int
-    ) -> list[typing.Tuple[typing.Tuple[int, int], T]]:
+    def orthogonal_neighbours(self, x: int, y: int) -> list[tuple[tuple[int, int], T]]:
         """Return the orthogonal neighbours of a point in the grid (but not the
         point itself).
 
@@ -1916,8 +1946,8 @@ class Grid(typing.Generic[T]):
 
     def pathfind(
         self: "Grid[AddableT]",
-        start: typing.Tuple[int, int] = (0, 0),
-        end: typing.Optional[typing.Tuple[int, int]] = None,
+        start: tuple[int, int] = (0, 0),
+        end: typing.Optional[tuple[int, int]] = None,
         initial_state: HashableU = (),
         is_valid_end: typing.Callable[[HashableU], bool] = lambda _: True,
         next_state: typing.Callable[
@@ -2061,9 +2091,39 @@ class Grid(typing.Generic[T]):
             return out + "])"
 
 
+@typing.overload
+def clamp(
+    val: SupportsRichComparisonT, max: SupportsRichComparisonT, /
+) -> SupportsRichComparisonT: ...
+
+
+@typing.overload
+def clamp(
+    val: SupportsRichComparisonT,
+    min: SupportsRichComparisonT,
+    max: SupportsRichComparisonT,
+    /,
+) -> SupportsRichComparisonT: ...
+
+
+_SENTINEL = object()
+
+
+def clamp(
+    val,
+    min_,
+    max_=_SENTINEL,  # type: ignore
+    /,
+):
+    """Clamp a value between two bounds."""
+    if max_ is _SENTINEL:
+        return max(min(val, -min_), min_)
+    return max(min(val, max_), min_)  # type: ignore
+
+
 def points_between(
-    start: typing.Tuple[int, int], end: typing.Tuple[int, int]
-) -> iter[typing.Tuple[int, int]]:
+    start: tuple[int, int], end: tuple[int, int]
+) -> iter[tuple[int, int]]:
     """Return an iterator of points between start and end, inclusive.
     Start to end must be horizontal, vertical, or a perfect diagonal.
     """
@@ -2079,15 +2139,102 @@ def points_between(
 
 
 class SparseGrid(typing.Generic[T]):
-    data: typing.DefaultDict[typing.Tuple[int, int], T]
+    data: typing.DefaultDict[tuple[int, int], T]
 
     def __init__(self, default_factory: typing.Callable[[], T]) -> None:
         self.data = collections.defaultdict(default_factory)
 
+    @classmethod
+    def from_string(
+        cls,
+        data: str,
+        default_factory: typing.Callable[[], U],
+        classify: typing.Callable[[str], U] = _default_classifier,
+        empty_char: str = ".",
+    ) -> "SparseGrid[U]":
+        """Create a grid from a string (e.g. a puzzle input).
+
+        Can take a classifier to use a custom classification. The default will
+        map numbers from 0 to 9 to themselves, and . and # to 0 and 1 respectively.
+        """
+        out = SparseGrid(default_factory)
+        for y, row in enumerate(data.splitlines()):
+            for x, char in enumerate(row):
+                if char != empty_char:
+                    out[x, y] = classify(char)
+        return out
+
+    def _new_of_type(self) -> "SparseGrid[T]":
+        return SparseGrid(self.data.default_factory)  # type: ignore
+
+    def shear_horizontal(self, row_height: int = 1) -> "SparseGrid[T]":
+        """Shear the grid horizontally keeping rows of a given height.
+
+        e.g. with row_height = 2, assuming E is the centre:
+
+        ABC       ABC
+        DEF  ->   DEF
+        GHI      GHI
+        """
+        out = self._new_of_type()
+        for (x, y), value in self.items():
+            out[x + y // row_height, y] = value
+        return out
+
+    def shear_vertical(self, column_width: int = 1) -> "SparseGrid[T]":
+        """Shear the grid vertically keeping columns of a given width.
+
+        e.g. with column_width = 2, assuming E is the centre:
+
+        ABC       ABD
+        DEF  ->   EFG
+        GHI      HII
+        """
+        out = self._new_of_type()
+        for (x, y), value in self.items():
+            out[x, y + x // column_width] = value
+        return out
+
+    def rotate_45_clockwise(self) -> "SparseGrid[T]":
+        """
+        Rotate the grid 45° clockwise.
+
+        This is a shear rotation, so the output may look strange:
+
+        ABC      DAB
+        DEF  ->  GEC
+        GHI      HIF
+        """
+        out = self._new_of_type()
+        for (x, y), value in self.items():
+            out[
+                clamp(x - y, -max(abs(x), abs(y)), max(abs(x), abs(y))),
+                clamp(x + y, -max(abs(x), abs(y)), max(abs(x), abs(y))),
+            ] = value
+        return out
+
+    def rotate_45_anticlockwise(self) -> "SparseGrid[T]":
+        """
+        Rotate the grid 45° clockwise.
+
+        This is a shear rotation, so the output may look strange:
+
+        ABC      BCF
+        DEF  ->  AEI
+        GHI      DGH
+        """
+        out = self._new_of_type()
+        for (x, y), value in self.items():
+            out[
+                clamp(x + y, -max(abs(x), abs(y)), max(abs(x), abs(y))),
+                clamp(y - x, -max(abs(x), abs(y)), max(abs(x), abs(y))),
+            ] = value
+        return out
+
     def draw_line(
         self,
-        start: typing.Tuple[int, int],
-        end: typing.Tuple[int, int],
+        start: tuple[int, int],
+        end: tuple[int, int],
         value: T,
     ) -> None:
         """Draw a line on a sparse grid, setting all points between start and end
@@ -2098,20 +2245,20 @@ class SparseGrid(typing.Generic[T]):
 
     def draw_lines(
         self,
-        lines: Iterable[typing.Tuple[int, int]],
+        lines: Iterable[tuple[int, int]],
         value: T,
     ) -> None:
         """Draw a series of lines on a sparse grid, setting all points between
         each pair of points to value.
         """
-        _lines: list[typing.Tuple[int, int]] = list(lines)
+        _lines: list[tuple[int, int]] = list(lines)
         if _lines:
             x, y = _lines[0]  # allows for lists to be used instead of tuples
             self[x, y] = value
         for start, end in _lines.windowed(2):
             self.draw_line(start, end, value)
 
-    def bounds(self, empty: typing.List[T]) -> typing.Tuple[int, int, int, int]:
+    def bounds(self, empty: builtins.list[T]) -> tuple[int, int, int, int]:
         """Return the bounds of a sparse grid, as a tuple of (min_x, min_y, max_x, max_y)."""
         if len(self) == 0:
             return 0, 0, 0, 0
@@ -2124,7 +2271,7 @@ class SparseGrid(typing.Generic[T]):
             )
 
     def pretty_print(
-        self, to_char: typing.Callable[[T], str], empty: typing.List[T]
+        self, to_char: typing.Callable[[T], str], empty: builtins.list[T]
     ) -> None:
         """Print a sparse grid to the console."""
         min_x, min_y, max_x, max_y = self.bounds(empty)
@@ -2145,31 +2292,31 @@ class SparseGrid(typing.Generic[T]):
                 print(to_char(self[x, y]), end="")
             print()
 
-    def __getitem__(self, index: typing.Tuple[int, int]) -> T:
+    def __getitem__(self, index: tuple[int, int]) -> T:
         return self.data[index]
 
-    def __setitem__(self, index: typing.Tuple[int, int], value: T) -> None:
+    def __setitem__(self, index: tuple[int, int], value: T) -> None:
         self.data[index] = value
 
-    def __delitem__(self, index: typing.Tuple[int, int]) -> None:
+    def __delitem__(self, index: tuple[int, int]) -> None:
         del self.data[index]
 
     def __len__(self) -> int:
         return len(self.data)
 
-    def __iter__(self) -> iter[typing.Tuple[int, int]]:
+    def __iter__(self) -> iter[tuple[int, int]]:
         return iter(self.data)
 
     def __repr__(self) -> str:
         return f"SparseGrid({self.data})"
 
-    def keys(self) -> iter[typing.Tuple[int, int]]:
+    def keys(self) -> iter[tuple[int, int]]:
         return iter(self.data.keys())
 
     def values(self) -> iter[T]:
         return iter(self.data.values())
 
-    def items(self) -> iter[typing.Tuple[typing.Tuple[int, int], T]]:
+    def items(self) -> iter[tuple[tuple[int, int], T]]:
         return iter(self.data.items())
 
 
@@ -2188,9 +2335,9 @@ def narrow_list(list: list, type: typing.Type[T]) -> typing.TypeGuard[list[T]]:
 
 
 def pathfind(
-    grid: typing.List[typing.List[int]],
-    start: typing.Tuple[int, int] = (0, 0),
-    end: typing.Optional[typing.Tuple[int, int]] = None,
+    grid: builtins.list[builtins.list[int]],
+    start: tuple[int, int] = (0, 0),
+    end: typing.Optional[tuple[int, int]] = None,
 ) -> int:
     """Use the A* algorithm to find the best path from start to end, and
     return the total cost.
@@ -2224,9 +2371,9 @@ dijkstras = pathfind
 
 
 class PrioQueue(typing.Generic[T], typing.Iterator[T], typing.Iterable[T]):
-    _data: typing.List[T]
+    _data: builtins.list[T]
 
-    def __init__(self, data: typing.List[T]) -> None:
+    def __init__(self, data: builtins.list[T]) -> None:
         self._data = data
         heapify(self._data)
 
@@ -2278,7 +2425,7 @@ def search(
     next_states: typing.Callable[[T], typing.Iterable[T]],
     heuristic: typing.Callable[[T], float] = lambda i: 0,
     freeze: typing.Callable[[T], Hashable] | None = None,
-) -> typing.Tuple[int, typing.List[T]]:
+) -> tuple[int, builtins.list[T]]:
     """Perform A* (or Dijkstra if heuristic is not provided) search on a state
     space, returning the number of steps and all states in the chosen path
     (including both start and end point).
@@ -2322,7 +2469,7 @@ def search(
 
 
 def chinese_remainder_theorem(
-    moduli: typing.List[int], residues: typing.List[int]
+    moduli: builtins.list[int], residues: builtins.list[int]
 ) -> int:
     """Given the numbers N % modulus_i = residue_i, return N % prod(modulus_i).
 

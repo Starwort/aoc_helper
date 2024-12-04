@@ -162,7 +162,7 @@ def fetch(day: int = TODAY, year: int = DEFAULT_YEAR, never_print: bool = False)
 
 def _load_leaderboard_times(
     day: int, year: int = DEFAULT_YEAR
-) -> typing.Tuple[typing.List[datetime.timedelta], typing.List[datetime.timedelta]]:
+) -> tuple[list[datetime.timedelta], list[datetime.timedelta]]:
     day_ = str(day)
     year_ = str(year)
 
@@ -174,7 +174,7 @@ def _load_leaderboard_times(
     if leaderboards.exists():
         with leaderboards.open() as f:
             # ([seconds], [seconds])
-            data: typing.List[typing.List[int]] = json.load(f)
+            data: list[list[int]] = json.load(f)
             return [datetime.timedelta(seconds=t) for t in data[0]], [datetime.timedelta(seconds=t) for t in data[1]]  # type: ignore
     else:
         leaderboard_page = requests.get(
@@ -182,8 +182,8 @@ def _load_leaderboard_times(
         )
         soup = Soup(leaderboard_page.text, "html.parser")
         times = soup.select(".leaderboard-entry")
-        part_1_times: typing.List[datetime.timedelta] = []
-        part_2_times: typing.List[datetime.timedelta] = []
+        part_1_times: list[datetime.timedelta] = []
+        part_2_times: list[datetime.timedelta] = []
         in_part_2 = False
         for leaderboard_time in times:
             if leaderboard_time.span.text == "  1)":  # type: ignore
@@ -212,7 +212,7 @@ def _load_leaderboard_times(
         return part_1_times, part_2_times
 
 
-def _practice_result_for(day: int, year: int) -> typing.List[int]:
+def _practice_result_for(day: int, year: int) -> list[int]:
     practice_data_dir = PRACTICE_DATA_DIR / str(year) / str(day)
     _make(practice_data_dir)
     try:
@@ -243,7 +243,7 @@ def _calculate_practice_result(day: int, part: int, year: int) -> None:
 
     try:
         with open(practice_data_dir / filename) as f:
-            data: typing.List[float] = json.load(f)
+            data: list[float] = json.load(f)
     except (json.decoder.JSONDecodeError, FileNotFoundError):
         data = []
     with open(practice_data_dir / filename, "w") as f:
@@ -254,7 +254,7 @@ def _calculate_practice_result(day: int, part: int, year: int) -> None:
 
 def _estimate_practice_rank(
     day: int, part: int, year: int, solve_time: datetime.timedelta
-) -> typing.Optional[typing.Tuple[int, int, int]]:
+) -> typing.Optional[tuple[int, int, int]]:
     import bisect
 
     leaderboard = _load_leaderboard_times(day, year)[part - 1]
@@ -499,18 +499,18 @@ def lazy_submit(
 
 def get_sample_input(
     day: int, part: int, year: int = DEFAULT_YEAR
-) -> typing.Optional[typing.Tuple[str, str]]:
+) -> typing.Optional[tuple[str, str]]:
     """Retrieves the example input and answer for the corresponding AOC challenge."""
     testing_dir = DATA_DIR / str(year) / str(day)
     _make(testing_dir)
     testing_file = testing_dir / "tests.json"
 
     if testing_file.exists():
-        test_info: typing.Dict[str, typing.Optional[typing.Tuple[str, str]]] = (
-            json.loads(testing_file.read_text())
+        test_info: dict[str, typing.Optional[tuple[str, str]]] = json.loads(
+            testing_file.read_text()
         )
     else:
-        test_info: typing.Dict[str, typing.Optional[typing.Tuple[str, str]]] = {}
+        test_info: dict[str, typing.Optional[tuple[str, str]]] = {}
 
     if str(part) in test_info:
         return test_info[str(part)]
@@ -603,7 +603,7 @@ def lazy_test(
     parse: typing.Callable[[str], T],
     solution: typing.Callable[[T], typing.Any],
     year: int = DEFAULT_YEAR,
-    test_data: typing.Optional[typing.Tuple[str, typing.Any]] = None,
+    test_data: typing.Optional[tuple[str, typing.Any]] = None,
 ) -> None:
     """Test the function with AOC's example data only if we haven't tested it already.
 
