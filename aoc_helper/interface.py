@@ -328,7 +328,7 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
     solution_file = submission_dir / f"{part}.solution"
     if solution_file.exists():
         solution = solution_file.read_text()
-        if "--practice" in sys.argv:
+        if "--practice" in sys.argv or "--force-run" in sys.argv:
             if solution == answer_:
                 _calculate_practice_result(day, part, year)
             else:
