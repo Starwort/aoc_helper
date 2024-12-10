@@ -2057,7 +2057,15 @@ class Grid(typing.Generic[T]):
     def deepcopy(self) -> "Grid[T]":
         return Grid(self.data.deepcopy())
 
-    def __getitem__(self, index: int) -> list[T]:
+    @typing.overload
+    def __getitem__(self, index: tuple[int, int]) -> T: ...
+    @typing.overload
+    def __getitem__(self, index: int) -> list[T]: ...
+
+    def __getitem__(self, index):
+        if isinstance(index, tuple):
+            x, y = index
+            return self.data[y][x]
         return self.data[index]
 
     def __repr_row(self, row: list[T]) -> str:
