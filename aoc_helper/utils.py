@@ -1734,8 +1734,15 @@ class Grid(typing.Generic[T]):
         """Return the height of the grid."""
         return len(self.data)
 
-    def find_all(self, other: "SparseGrid[T]") -> iter[tuple[int, int]]:
+    def find_all(
+        self, other: "typing.Union[SparseGrid[T], T]"
+    ) -> iter[tuple[int, int]]:
         """Find all occurrences of other in self."""
+
+        if not isinstance(other, SparseGrid):
+            _other = other
+            other = SparseGrid(lambda: _other)
+            other[0, 0] = _other
 
         def find():
             for y, row in enumerate(self.data):
@@ -1943,6 +1950,40 @@ class Grid(typing.Generic[T]):
         if y < len(self.data) - 1:
             rv.append(((x, y + 1), self.data[y + 1][x]))
         return rv
+
+    def explore(
+        self,
+        can_move: typing.Callable[[tuple[int, int], T, tuple[int, int], T], bool],
+        return_path_when: typing.Callable[
+            [tuple[int, int], T], bool
+        ] = lambda pos, cell: True,
+        start: tuple[int, int] = (0, 0),
+        neighbour_type: typing.Literal["ortho", "full"] = "ortho",
+        unique_paths: bool = False,
+    ) -> iter[tuple[tuple[int, int], ...]]:
+        def explore():
+            neighbours = (
+                self.neighbours
+                if neighbour_type == "full"
+                else self.orthogonal_neighbours
+            )
+            seen = set()
+            q = deque([(start, self[start], tuple[tuple[int, int], ...]((start,)))])
+            while q:
+                pos, cell, path = q.popleft()
+                if not unique_paths:
+                    if pos in seen:
+                        continue
+                    seen.add(pos)
+                if return_path_when(pos, cell):
+                    yield path
+                for neighbour_pos, neighbour_cell in neighbours(*pos):
+                    if can_move(pos, cell, neighbour_pos, neighbour_cell):
+                        q.append(
+                            (neighbour_pos, neighbour_cell, path + (neighbour_pos,))
+                        )
+
+        return iter(explore())
 
     def pathfind(
         self: "Grid[AddableT]",
@@ -2238,7 +2279,7 @@ class SparseGrid(typing.Generic[T]):
                 clamp(y - x, -max(abs(x), abs(y)), max(abs(x), abs(y))),
             ] = value
         return out
-    
+
     def rotations(self) -> "list[SparseGrid[T]]":
         """Return a list of all 45° rotations of the grid."""
         out = list()
@@ -2246,7 +2287,7 @@ class SparseGrid(typing.Generic[T]):
             self = self.rotate_45_clockwise()
             out.append(self)
         return out
-    
+
     def cardinal_rotations(self) -> "list[SparseGrid[T]]":
         """Return a list of all 90° rotations of the grid."""
         out = list()
