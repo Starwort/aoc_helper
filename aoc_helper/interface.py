@@ -328,14 +328,28 @@ def submit(day: int, part: int, answer: typing.Any, year: int = DEFAULT_YEAR) ->
     solution_file = submission_dir / f"{part}.solution"
     if solution_file.exists():
         solution = solution_file.read_text()
-        if "--practice" in sys.argv or "--force-run" in sys.argv:
+        if "--practice" in sys.argv:
             if solution == answer_:
                 _calculate_practice_result(day, part, year)
             else:
                 print(
                     f"{RED}Submitted {BLUE}{answer_}{RESET}; that's not the right"
-                    f" answer.{RESET}\n"
+                    f" answer.{RESET}"
                 )
+            return
+        if "--force-run" in sys.argv:
+            if solution != answer_:
+                print(
+                    f"{RED}[Day {BLUE}{day}{RESET} part {BLUE}{part}{RESET}]"
+                    f" Solution produced incorrect answer {BLUE}{answer_}{RESET}!"
+                    f" (Correct answer: {BLUE}{solution}{RESET}){RESET}"
+                )
+            else:
+                print(
+                    f"{GREEN}[Day {BLUE}{day}{RESET} part {BLUE}{part}{RESET}]"
+                    f" Solution produced correct answer {BLUE}{answer_}{RESET}!{RESET}"
+                )
+                _print_rank(solutions[part_][solution])
             return
         print(
             f"Day {BLUE}{day}{RESET} part {BLUE}{part}{RESET} "
