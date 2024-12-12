@@ -1824,16 +1824,20 @@ class Grid(typing.Generic[T]):
 
         This operation looks similar to a 90° rotation followed by a reflection:
 
+        ```
         ABC
         DEF
         HIJ
         KLM
+        ```
 
         transposes to:
 
+        ```
         ADHK
         BEIL
         CFJM
+        ```
         """
         return Grid(self.data.transposition())
 
@@ -1901,15 +1905,19 @@ class Grid(typing.Generic[T]):
         - * are points returned
         - . are other points in the grid
 
+        ```
         ...........
         ..***......
         ..*A*......
         ..***......
+        ```
 
+        ```
         A*.........
         **.........
         ...........
         ...........
+        ```
         """
         return (
             irange(max(y - 1, 0), min(y + 1, len(self.data) - 1))
@@ -1930,15 +1938,19 @@ class Grid(typing.Generic[T]):
         - * are points returned
         - . are other points in the grid
 
+        ```
         ...........
         ...*.......
         ..*A*......
         ...*.......
+        ```
 
+        ```
         A*.........
         *..........
         ...........
         ...........
+        ```
         """
         rv = list()
         if x > 0:
@@ -1950,6 +1962,116 @@ class Grid(typing.Generic[T]):
         if y < len(self.data) - 1:
             rv.append(((x, y + 1), self.data[y + 1][x]))
         return rv
+
+    def region(
+        self,
+        start: tuple[int, int],
+        is_in_region: typing.Callable[
+            [tuple[int, int], T, tuple[int, int], T], bool
+        ] = lambda from_pos, from_cell, to_pos, to_cell: (from_cell == to_cell),
+        neighbour_type: typing.Literal["ortho", "full"] = "ortho",
+    ) -> tuple[set[tuple[int, int]], list[set[tuple[float, float]]]]:
+        """Return the region of points, and the walls enclosing that region, that
+        form a contiguous region containing `start`, where a point is part of
+        the region if it is adjacent to a cell in the region and `is_in_region`
+        returns True when called on that cell's position and value as well as
+        the candidate cell's position and value.
+
+        The walls are returned as a list of sets of points, where each set in
+        the list is a continuous wall. Each point in the wall is the midpoint
+        between two cells in the grid; either every point in the wall will be
+        of the form (x + 0.5, y) or every point will be of the form (x, y + 0.5).
+
+        If `neighbour_type` is "full", diagonal-only connections will cause some
+        of the returned walls to intersect:
+
+        ```
+               -
+        A.    |A|.
+        .A ->  -+-
+               .|A|
+                 _
+        ```
+        """
+        region = set()
+        walls = list[set[tuple[float, float]]]()
+        q = deque([start])
+
+        def is_boundary(x, y, x2, y2):
+            return not (
+                0 <= x2 < self.width
+                and 0 <= y2 < self.height
+                and is_in_region((x, y), self[x, y], (x2, y2), self[x2, y2])
+            )
+
+        def scan_wall(x, y, dx, dy):
+            wall = set()
+            # scan rightwards
+            x_, y_ = x, y
+            x2, y2 = x, y
+            while 0 <= x2 < self.width and 0 <= y2 < self.height:
+                if not is_in_region((x_, y_), self[x_, y_], (x2, y2), self[x2, y2]):
+                    break
+                x_, y_ = x2, y2
+                if not is_boundary(x_, y_, x_ + dx, y_ + dy):
+                    break
+                wall.add((x_ + dx / 2, y_ + dy / 2))
+                x2, y2 = x_ - dy, y_ + dx
+            # scan leftwards
+            x_, y_ = x, y
+            x2, y2 = x, y
+            while 0 <= x2 < self.width and 0 <= y2 < self.height:
+                if not is_in_region((x_, y_), self[x_, y_], (x2, y2), self[x2, y2]):
+                    break
+                x_, y_ = x2, y2
+                if not is_boundary(x_, y_, x_ + dx, y_ + dy):
+                    break
+                wall.add((x_ + dx / 2, y_ + dy / 2))
+                x2, y2 = x_ + dy, y_ - dx
+            return wall
+
+        while q:
+            pos = q.popleft()
+            if pos in region:
+                continue
+            region.add(pos)
+            x, y = pos
+            for dx, dy in ((0, 1), (1, 0), (0, -1), (-1, 0)):
+                if walls.none(lambda wall: (x + dx / 2, y + dy / 2) in wall) and (
+                    wall := scan_wall(x, y, dx, dy)
+                ):
+                    walls.append(wall)
+            for neighbour_pos, neighbour_cell in (
+                self.neighbours
+                if neighbour_type == "full"
+                else self.orthogonal_neighbours
+            )(*pos):
+                if is_in_region(pos, self[pos], neighbour_pos, neighbour_cell):
+                    q.append(neighbour_pos)
+        return region, walls
+
+    def regions(
+        self,
+        is_in_region: typing.Callable[
+            [tuple[int, int], T, tuple[int, int], T], bool
+        ] = lambda from_pos, from_cell, to_pos, to_cell: (from_cell == to_cell),
+        neighbour_type: typing.Literal["ortho", "full"] = "ortho",
+    ) -> iter[tuple[set[tuple[int, int]], list[set[tuple[float, float]]]]]:
+        """Return all regions in the grid. See `region()` for more details."""
+
+        def gen():
+            seen = set()
+            for y, row in enumerate(self.data):
+                for x, cell in enumerate(row):
+                    if (x, y) in seen:
+                        continue
+                    region, walls = self.region(
+                        (x, y), is_in_region=is_in_region, neighbour_type=neighbour_type
+                    )
+                    seen |= region
+                    yield region, walls
+
+        return iter(gen())
 
     def explore(
         self,
@@ -2100,6 +2222,7 @@ class Grid(typing.Generic[T]):
 
     @typing.overload
     def __getitem__(self, index: tuple[int, int]) -> T: ...
+
     @typing.overload
     def __getitem__(self, index: int) -> list[T]: ...
 
@@ -2221,9 +2344,11 @@ class SparseGrid(typing.Generic[T]):
 
         e.g. with row_height = 2, assuming E is the centre:
 
+        ```
         ABC       ABC
         DEF  ->   DEF
         GHI      GHI
+        ```
         """
         out = self._new_of_type()
         for (x, y), value in self.items():
@@ -2235,9 +2360,12 @@ class SparseGrid(typing.Generic[T]):
 
         e.g. with column_width = 2, assuming E is the centre:
 
-        ABC       ABD
-        DEF  ->   EFG
-        GHI      HII
+        ```
+        ABC       BC
+        DEF  ->  AEF
+        GHI      DHI
+                 G
+        ```
         """
         out = self._new_of_type()
         for (x, y), value in self.items():
@@ -2245,14 +2373,15 @@ class SparseGrid(typing.Generic[T]):
         return out
 
     def rotate_45_clockwise(self) -> "SparseGrid[T]":
-        """
-        Rotate the grid 45° clockwise.
+        """Rotate the grid 45° clockwise.
 
         This is a shear rotation, so the output may look strange:
 
+        ```
         ABC      DAB
         DEF  ->  GEC
         GHI      HIF
+        ```
         """
         out = self._new_of_type()
         for (x, y), value in self.items():
@@ -2263,14 +2392,15 @@ class SparseGrid(typing.Generic[T]):
         return out
 
     def rotate_45_anticlockwise(self) -> "SparseGrid[T]":
-        """
-        Rotate the grid 45° clockwise.
+        """Rotate the grid 45° clockwise.
 
         This is a shear rotation, so the output may look strange:
 
+        ```
         ABC      BCF
         DEF  ->  AEI
         GHI      DGH
+        ```
         """
         out = self._new_of_type()
         for (x, y), value in self.items():
