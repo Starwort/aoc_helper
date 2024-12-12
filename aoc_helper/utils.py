@@ -269,27 +269,27 @@ class list(typing.Generic[T], UserList[T]):
                 return i
 
     def any(self, pred: typing.Union[typing.Callable[[T], bool], T] = bool) -> bool:
-        """Consume this iterator and return True if any element satisfies the
-        given predicate. The default predicate is bool; therefore by default this
-        method returns True if any element is truthy.
+        """Return True if any element of this list satisfies the given predicate.
+        The default predicate is bool; therefore by default this method returns
+        True if any element is truthy.
         """
         if not callable(pred):
             pred = (lambda j: lambda i: i == j)(pred)
         return any(pred(item) for item in self)
 
     def all(self, pred: typing.Union[typing.Callable[[T], bool], T] = bool) -> bool:
-        """Consume this iterator and return True if all elements satisfy the
-        given predicate. The default predicate is bool; therefore by default this
-        method returns True if all elements are truthy.
+        """Return True if all elements of this list satisfy the given predicate.
+        The default predicate is bool; therefore by default this method returns
+        True if all elements are truthy.
         """
         if not callable(pred):
             pred = (lambda j: lambda i: i == j)(pred)
         return all(pred(item) for item in self)
 
     def none(self, pred: typing.Union[typing.Callable[[T], bool], T] = bool) -> bool:
-        """Consume this iterator and return True if no element satisfies the
-        given predicate. The default predicate is bool; therefore by default this
-        method returns True if no element is truthy.
+        """Return True if no element of this list satisfies the given predicate.
+        The default predicate is bool; therefore by default this method returns
+        True if no element is truthy.
         """
         if not callable(pred):
             pred = (lambda j: lambda i: i == j)(pred)
