@@ -2232,6 +2232,10 @@ class Grid(typing.Generic[T]):
             return self.data[y][x]
         return self.data[index]
 
+    def __setitem__(self, index: tuple[int, int], value: T) -> None:
+        x, y = index
+        self.data[y][x] = value
+
     def __repr_row(self, row: list[T]) -> str:
         # Specialise output for empty, bool, and int
         if row.len() == 0:
