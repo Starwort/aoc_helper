@@ -12,7 +12,6 @@ classifiers = [
 dependencies = [
   "requests",
   "beautifulsoup4",
-  "typing",
   "typing_extensions",
 ]
 description = "A helper package for Advent of Code"
