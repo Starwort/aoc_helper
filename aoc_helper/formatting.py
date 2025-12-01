@@ -7,7 +7,7 @@ T = typing.TypeVar("T")
 U = typing.TypeVar("U")
 
 try:
-    from rich import print, progress
+    from rich import get_console, print, progress
 except ImportError:
     print = print_raw  # suppress a Pylance warning
 
@@ -33,6 +33,8 @@ else:
     BLUE = "[blue]"
     GOLD = "[gold1]"
     RESET = "[/]"
+
+    get_console()._highlight = False
 
     def wait(msg: str, secs: float) -> None:
         for _ in progress.track(
