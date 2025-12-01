@@ -27,7 +27,7 @@ from .data import (
     URL,
     get_cookie,
 )
-from .interface import _estimate_practice_rank, _format_timedelta
+from .interface import _estimate_practice_rank, _format_timedelta, days_in_year
 from .interface import fetch as fetch_input
 from .interface import submit as submit_answer
 from .interface import validate_token as validate_token_
@@ -235,6 +235,12 @@ def submit(
 @click.option("--year", type=int, default=DEFAULT_YEAR)
 def template(days: list[int], year: int):
     """Generate an answer stub for every day of DAYS in --year"""
+    invalid = [day for day in days if day > days_in_year(year)]
+    if invalid:
+        raise click.BadParameter(
+            "values out of range: " + ", ".join(map(str, invalid)),
+            param_hint="days",
+        )
     for day in days:
         print(f"Generating day_{day:0>2}.py")
         pathlib.Path(f"day_{day:0>2}.py").write_text(

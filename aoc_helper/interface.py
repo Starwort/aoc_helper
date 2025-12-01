@@ -38,6 +38,14 @@ T = typing.TypeVar("T")
 U = typing.TypeVar("U")
 
 
+def days_in_year(year: int) -> int:
+    if year < 2015:
+        raise ValueError("Advent of Code started in 2015.")
+    if year < 2025:
+        return 25
+    return 12  # https://adventofcode.com/2025/about#faq_num_days
+
+
 def _open_page(page: str) -> None:
     """Open the page if the user hasn't opted out"""
     if not (DATA_DIR / ".nobrowser").exists():
@@ -430,10 +438,11 @@ def _print_rank(msg: str) -> None:
         _pretty_print(msg)
 
 
-def submit_25(year: str):
+def submit_final(year: int):
+    day = days_in_year(year)
     print(f"{GREEN}Finishing Advent of Code {BLUE}{year}{RESET}!{RESET}")
     resp = requests.post(
-        url=URL.format(day="25", year=year) + "/answer",
+        url=URL.format(day=day, year=year) + "/answer",
         cookies=get_cookie(),
         data={"level": "2", "answer": "0"},
         headers=HEADERS,
@@ -443,15 +452,15 @@ def submit_25(year: str):
             token_file = DATA_DIR / "token.txt"
             token = input("Your token has expired. Please enter your new token\n>>> ")
             token_file.write_text(token)
-            return submit_25(year)
+            return submit_final(year)
         raise ValueError("Received bad response")
 
     print("Response from the server:")
     article = Soup(resp.text, "html.parser").article
     assert article is not None
     print(article.text.strip())
-    if len(_practice_result_for(25, int(year))) < 2:
-        _calculate_practice_result(25, 2, int(year))
+    if len(_practice_result_for(day, year)) < 2:
+        _calculate_practice_result(day, 2, year)
 
 
 def lazy_submit(
@@ -471,10 +480,10 @@ def lazy_submit(
 
     part = 1 if solution.__name__ == "part_one" else 2
     submission_dir = DATA_DIR / str(year) / str(day)
-    if day == 25 and part == 2:
+    if day == days_in_year(year) and part == 2:
         # Don't try to submit part 2 if part 1 isn't solved
         if (submission_dir / "1.solution").exists():
-            submit_25(str(year))
+            submit_final(year)
         else:
             return
     solution_file = submission_dir / f"{part}.solution"
