@@ -1556,7 +1556,7 @@ def _frange(
     else:
         while start > stop:
             yield start
-            start -= step
+            start += step
 
 
 def frange(start: float, stop: float, step: float = 0.1) -> iter[float]:
