@@ -997,12 +997,9 @@ class iter(typing.Generic[T_Co], typing.Iterator[T_Co], typing.Iterable[T_Co]):
         self.skip(n)
         return self.next()
 
-    def take(self, n: int) -> tuple[T_Co, ...]:
-        """Return the next n elements of this iterator.
-
-        Raises StopIteration if there are not enough elements.
-        """
-        return tuple(self.next() for _ in builtins.range(n))
+    def take(self, n: int) -> "iter[T_Co]":
+        """Return the next n elements of this iterator as an iterator."""
+        return iter(self.next() for _ in builtins.range(n))
 
     @typing.overload
     def collect(self) -> list[T_Co]: ...
